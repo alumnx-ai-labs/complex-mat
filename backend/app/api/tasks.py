@@ -18,6 +18,7 @@ from app.schemas.task import (
     TaskWithMeetingResponse,
 )
 from app.services import notification_service, task_service
+from app.services.activity_log_service import log_activity
 
 router = APIRouter(tags=["tasks"])
 
@@ -84,6 +85,7 @@ def create_task(
         background_tasks.add_task(
             notification_service.notify_task_assigned, email_sender, task, meeting, assignee
         )
+        log_activity(db, current_user.id, "NOTIFICATION_SENT", "Task", task.id)
     return task_to_response(db, task)
 
 
@@ -122,6 +124,7 @@ def update_task(
             background_tasks.add_task(
                 notification_service.notify_task_assigned, email_sender, task, meeting, assignee
             )
+            log_activity(db, current_user.id, "NOTIFICATION_SENT", "Task", task.id)
     return task_to_response(db, task)
 
 

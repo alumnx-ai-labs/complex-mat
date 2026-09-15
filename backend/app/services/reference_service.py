@@ -10,6 +10,7 @@ from app.repositories.comment_repository import CommentRepository
 from app.repositories.meeting_repository import MeetingRepository
 from app.repositories.task_repository import TaskRepository
 from app.repositories.user_repository import UserRepository
+from app.services.activity_log_service import log_activity
 from app.services.mention_parser import find_ado_ids, find_mention_tokens, resolve_mentions
 
 
@@ -25,6 +26,7 @@ def sync_task_content_references(
     meeting_id: int,
     *texts: str | None,
     client: AzureDevOpsClient | None = None,
+    actor_id: int | None = None,
 ) -> None:
     """Re-derives the Task-sourced mentions and Linked Azure DevOps Items for a
     Task's own Title/Description-Notes whenever either is written (FR-028,
@@ -38,13 +40,17 @@ def sync_task_content_references(
     CommentRepository(db).replace_mentions(
         MentionSourceType.TASK, task_id, [user.id for user in mentioned_users]
     )
-    _sync_ado_references(db, task_id, find_ado_ids(*texts), client)
+    _sync_ado_references(db, task_id, find_ado_ids(*texts), client, actor_id=actor_id)
 
 
 def sync_comment_references(
-    db: Session, task_id: int, ado_ids: list[int], client: AzureDevOpsClient | None = None
+    db: Session,
+    task_id: int,
+    ado_ids: list[int],
+    client: AzureDevOpsClient | None = None,
+    actor_id: int | None = None,
 ) -> None:
-    _sync_ado_references(db, task_id, ado_ids, client)
+    _sync_ado_references(db, task_id, ado_ids, client, actor_id=actor_id)
 
 
 def list_task_references(
@@ -69,7 +75,11 @@ def list_task_references(
 
 
 def _sync_ado_references(
-    db: Session, task_id: int, ado_ids: list[int], client: AzureDevOpsClient | None
+    db: Session,
+    task_id: int,
+    ado_ids: list[int],
+    client: AzureDevOpsClient | None,
+    actor_id: int | None = None,
 ) -> None:
     if not ado_ids:
         return
@@ -77,6 +87,7 @@ def _sync_ado_references(
     repo = AdoReferenceRepository(db)
     for ado_id in ado_ids:
         item = ado_client.get(ado_id)
+        is_new = repo.get(task_id, ado_id) is None
         repo.upsert(
             task_id=task_id,
             ado_work_item_id=ado_id,
@@ -84,3 +95,5 @@ def _sync_ado_references(
             cached_type=item.type if item else None,
             is_available=item is not None,
         )
+        if is_new and actor_id is not None:
+            log_activity(db, actor_id, "ADO_REFERENCE_DETECTED", "Task", task_id)

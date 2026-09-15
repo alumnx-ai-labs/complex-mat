@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
-import { PlaceholderPage } from "../components/layout/PlaceholderPage";
 import { ResponsiveShell } from "../components/layout/ResponsiveShell";
+import { ActivityLogPage } from "../pages/ActivityLogPage";
 import { CalendarPage } from "../pages/CalendarPage";
 import { CreateMeetingPage } from "../pages/CreateMeetingPage";
 import { EditMeetingPage } from "../pages/EditMeetingPage";
@@ -117,7 +117,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth title="Activity Log">
         <RequireAdmin>
-          <PlaceholderPage title="Activity Log" />
+          <ActivityLogPage />
         </RequireAdmin>
       </RequireAuth>
     ),

@@ -9,6 +9,7 @@ from app.models.user import Role, User
 from app.repositories.comment_repository import CommentRepository
 from app.repositories.meeting_repository import MeetingRepository
 from app.repositories.task_repository import TaskRepository
+from app.services.activity_log_service import log_activity
 from app.services.mention_parser import find_ado_ids, find_mention_tokens, resolve_mentions
 from app.services.reference_service import get_attendee_users, sync_comment_references
 
@@ -55,14 +56,19 @@ def create_comment(
     comment = comment_repo.create(
         task_id=task_id, author_id=current_user.id, message=message.strip()
     )
+    log_activity(db, current_user.id, "COMMENT_POSTED", "Task", task_id)
 
     attendees = get_attendee_users(db, meeting)
     mentioned_users = resolve_mentions(find_mention_tokens(comment.message), attendees)
     comment_repo.add_mentions(
         MentionSourceType.COMMENT, comment.id, [user.id for user in mentioned_users]
     )
+    for user in mentioned_users:
+        log_activity(db, current_user.id, "MEMBER_MENTIONED", "User", user.id)
 
-    sync_comment_references(db, task_id, find_ado_ids(comment.message), client)
+    sync_comment_references(
+        db, task_id, find_ado_ids(comment.message), client, actor_id=current_user.id
+    )
 
     return comment
 
