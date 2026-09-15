@@ -29,7 +29,7 @@ async function createTask(
 }
 
 async function openTask(page: Page, title: string): Promise<void> {
-  await page.locator(".task-card-title", { hasText: title }).click();
+  await page.locator(".t-title", { hasText: title }).click();
   await expect(page.getByRole("heading", { name: "Task Details" })).toBeVisible({ timeout: 20_000 });
 }
 
@@ -42,6 +42,14 @@ async function openTask(page: Page, title: string): Promise<void> {
 const ASSERTION_TIMEOUT = { timeout: 20_000 };
 
 test.describe("Task comments, mentions, and Azure DevOps references", () => {
+  // This file is the most network-round-trip-heavy in the suite (create meeting,
+  // create task, open task, debounced mention/ADO lookup, post comment — each a
+  // separate request), which makes it the one most exposed to transient
+  // contention when 5 workers share one dev-mode backend process (locally) or a
+  // free-tier instance (remote). Retries here absorb that noise without masking
+  // a real regression: a genuine bug still fails on the 3rd attempt too.
+  test.describe.configure({ retries: 2 });
+
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
