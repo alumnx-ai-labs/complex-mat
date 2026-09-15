@@ -7,6 +7,7 @@ from app.api.tasks import router as tasks_router
 from app.api.users import router as users_router
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
+from app.seed import seed
 
 settings = get_settings()
 
@@ -21,6 +22,11 @@ app.add_middleware(
 )
 
 register_exception_handlers(app)
+
+
+@app.on_event("startup")
+def on_startup() -> None:
+    seed()
 
 app.include_router(auth_router)
 app.include_router(meetings_router)

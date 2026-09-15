@@ -6,6 +6,14 @@ const BACKEND_PORT = 8000;
 export const ADMIN_MAIL_ID = process.env.E2E_ADMIN_MAIL_ID ?? "john@example.com";
 export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "ChangeMe123!";
 
+const REMOTE_BASE_URL = rawBaseURL
+  ? /^https?:\/\//.test(rawBaseURL)
+    ? rawBaseURL
+    : `https://${rawBaseURL}`
+  : undefined;
+
+const VERCEL_BYPASS_TOKEN = process.env.VERCEL_PROTECTION_BYPASS;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -16,9 +24,17 @@ export default defineConfig({
     ? [["junit", { outputFile: "playwright-report/results.xml" }], ["html", { open: "never" }]]
     : "html",
   use: {
-    baseURL: `http://localhost:${FRONTEND_PORT}`,
+    baseURL: REMOTE_BASE_URL ?? `http://localhost:${FRONTEND_PORT}`,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    ...(VERCEL_BYPASS_TOKEN
+      ? {
+          extraHTTPHeaders: {
+            "x-vercel-protection-bypass": VERCEL_BYPASS_TOKEN,
+            "x-vercel-set-bypass-cookie": "true",
+          },
+        }
+      : {}),
   },
   projects: [
     {
