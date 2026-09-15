@@ -19,17 +19,26 @@ function initials(name: string): string {
 
 export function TaskCard({
   task,
+  currentUserId,
   onStatusChange,
   onEdit,
   onOpen,
 }: {
   task: TaskWithMeeting;
+  currentUserId?: number;
   onStatusChange: (status: TaskStatus) => void;
   onEdit: () => void;
   onOpen?: () => void;
 }) {
+  // Only the task's own Assignee may change its status (not even the Meeting Owner/Admin) — a
+  // caller that doesn't know per-card ownership (e.g. My Tasks, where every card is already the
+  // signed-in user's own) simply omits currentUserId, which leaves the card fully interactive.
+  const canChangeStatus =
+    currentUserId === undefined || task.assigneeId === undefined || task.assigneeId === currentUserId;
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
+    disabled: !canChangeStatus,
   });
 
   const style = transform
@@ -44,7 +53,11 @@ export function TaskCard({
       data-dragging={isDragging || undefined}
       onClick={onOpen}
     >
-      <div {...listeners} {...attributes} className="task-card-drag" onMouseDown={onOpen}>
+      <div
+        {...(canChangeStatus ? listeners : {})}
+        {...(canChangeStatus ? attributes : {})}
+        className="task-card-drag"
+      >
         {task.meetingTitle && <div className="t-meeting">{task.meetingTitle}</div>}
         <div className="t-title">{task.title}</div>
         <div className="t-meta">
@@ -69,6 +82,7 @@ export function TaskCard({
           id={`task-status-${task.id}`}
           className="select-input"
           value={task.status}
+          disabled={!canChangeStatus}
           onChange={(event) => onStatusChange(event.target.value as TaskStatus)}
         >
           {STATUS_OPTIONS.map((option) => (
@@ -78,6 +92,9 @@ export function TaskCard({
           ))}
         </select>
       </div>
+      {!canChangeStatus && (
+        <p className="locked-note">Only the Assignee can drag or change this Task's Status.</p>
+      )}
 
       <button type="button" className="btn btn-secondary task-card-edit" onClick={onEdit}>
         Edit Description/Notes

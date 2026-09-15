@@ -7,6 +7,7 @@ export function TaskColumn({
   status,
   label,
   tasks,
+  currentUserId,
   onStatusChange,
   onEdit,
   onOpenTask,
@@ -14,6 +15,7 @@ export function TaskColumn({
   status: TaskStatus;
   label: string;
   tasks: TaskWithMeeting[];
+  currentUserId?: number;
   onStatusChange?: (taskId: number, status: TaskStatus) => void;
   onEdit?: (task: TaskWithMeeting) => void;
   onOpenTask?: (task: Task) => void;
@@ -30,6 +32,7 @@ export function TaskColumn({
         <TaskCard
           key={task.id}
           task={task}
+          currentUserId={currentUserId}
           onStatusChange={(nextStatus) => onStatusChange?.(task.id, nextStatus)}
           onEdit={() => onEdit?.(task)}
           onOpen={() => onOpenTask?.(task)}

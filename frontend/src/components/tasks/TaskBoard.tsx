@@ -1,4 +1,10 @@
-import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  PointerSensor,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 
 import type { Task, TaskStatus, TaskWithMeeting } from "../../services/tasksApi";
 import { TaskColumn } from "./TaskColumn";
@@ -24,15 +30,21 @@ export function resolveStatusChangeFromDragEnd(
 
 export function TaskBoard({
   tasks,
+  currentUserId,
   onStatusChange,
   onEdit,
   onOpenTask,
 }: {
   tasks: TaskWithMeeting[] | Task[];
+  currentUserId?: number;
   onStatusChange?: (taskId: number, status: TaskStatus) => void;
   onEdit?: (task: TaskWithMeeting) => void;
   onOpenTask?: (task: Task) => void;
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
   function handleDragEnd(event: DragEndEvent) {
     const change = resolveStatusChangeFromDragEnd(tasks, event);
     if (change && onStatusChange) {
@@ -41,7 +53,7 @@ export function TaskBoard({
   }
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="board">
         {COLUMNS.map((column) => (
           <TaskColumn
@@ -49,6 +61,7 @@ export function TaskBoard({
             status={column.status}
             label={column.label}
             tasks={tasks.filter((task) => task.status === column.status)}
+            currentUserId={currentUserId}
             onStatusChange={onStatusChange}
             onEdit={onEdit}
             onOpenTask={onOpenTask}
