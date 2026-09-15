@@ -32,6 +32,9 @@ export default defineConfig({
     baseURL: REMOTE_BASE_URL ?? `http://localhost:${FRONTEND_PORT}`,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    launchOptions: {
+      slowMo: 500, // Delays each action by 500ms
+    },
     ...(VERCEL_BYPASS_TOKEN
       ? {
           extraHTTPHeaders: {

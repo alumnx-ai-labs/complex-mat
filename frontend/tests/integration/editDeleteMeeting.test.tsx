@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "../../src/context/AuthContext";
 import { EditMeetingPage } from "../../src/pages/EditMeetingPage";
 import { MeetingDetailsPage } from "../../src/pages/MeetingDetailsPage";
+import type { AuthUser } from "../../src/services/authApi";
 import * as authApi from "../../src/services/authApi";
 import * as meetingsApi from "../../src/services/meetingsApi";
 import type { MeetingDetail } from "../../src/services/meetingsApi";
@@ -55,7 +56,7 @@ function meetingDetail(): MeetingDetail {
   };
 }
 
-function SignInAs({ user, children }: { user: typeof OWNER; children: React.ReactNode }) {
+function SignInAs({ user, children }: { user: AuthUser; children: React.ReactNode }) {
   const { login } = useAuth();
   useEffect(() => {
     login(user.employeeMailId, "Password123!");
@@ -64,7 +65,7 @@ function SignInAs({ user, children }: { user: typeof OWNER; children: React.Reac
   return <>{children}</>;
 }
 
-function renderApp(user: typeof OWNER, initialEntry = "/meetings/42") {
+function renderApp(user: AuthUser, initialEntry = "/meetings/42") {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <AuthProvider>
