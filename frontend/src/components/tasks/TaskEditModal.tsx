@@ -1,8 +1,13 @@
 import { useState } from "react";
 
+import { useComments } from "../../hooks/useComments";
+import { useTaskAdoReferences } from "../../hooks/useAdoReferences";
 import type { MeetingAttendee } from "../../services/meetingsApi";
 import type { Task, TaskCreateInput, TaskUpdateInput } from "../../services/tasksApi";
+import { AdoReferenceList } from "./AdoReferenceList";
 import { AssigneeControl } from "./AssigneeControl";
+import { CommentThread } from "./CommentThread";
+import { MentionAdoInput } from "./MentionAdoInput";
 
 const STATUS_LABEL: Record<Task["status"], string> = {
   TODO: "To Do",
@@ -11,6 +16,7 @@ const STATUS_LABEL: Record<Task["status"], string> = {
 };
 
 export function TaskEditModal({
+  meetingId,
   attendees,
   ownerId,
   currentUserId,
@@ -21,6 +27,7 @@ export function TaskEditModal({
   onUpdate,
   onDelete,
 }: {
+  meetingId: number;
   attendees: MeetingAttendee[];
   ownerId: number;
   currentUserId: number;
@@ -37,6 +44,10 @@ export function TaskEditModal({
   const canEditAssignee = isOwner;
   const canEditDescription = isAssignee;
   const canDelete = (isOwner || isAdmin) && task !== null;
+  const canComment = task !== null && (isOwner || isAdmin || isAssignee);
+
+  const { comments, isLoading: commentsLoading, postComment } = useComments(task?.id ?? null);
+  const { references } = useTaskAdoReferences(task?.id ?? null);
 
   const [title, setTitle] = useState(task?.title ?? "");
   const [descriptionNotes, setDescriptionNotes] = useState(task?.descriptionNotes ?? "");
@@ -126,7 +137,15 @@ export function TaskEditModal({
           {error && <p role="alert" className="login-error">{error}</p>}
           <div className="field-row">
             <label className="field-label" htmlFor="task-title">Task Title</label>
-            <input id="task-title" className="text-input" value={title} disabled={titleLocked} onChange={(event) => setTitle(event.target.value)} />
+            <MentionAdoInput
+              as="input"
+              id="task-title"
+              className="text-input"
+              meetingId={meetingId}
+              value={title}
+              disabled={titleLocked}
+              onChange={setTitle}
+            />
           </div>
           <div style={{ display: "flex", gap: "12px" }}>
             <div className="field-row" style={{ flex: 1 }}>
@@ -142,9 +161,28 @@ export function TaskEditModal({
           {task && <div className="field-row"><span className="field-label">Status</span><div className="muted">{STATUS_LABEL[task.status]}</div></div>}
           <div className="field-row">
             <label className="field-label" htmlFor="task-description">Description / Notes</label>
-            <textarea id="task-description" className="textarea-input" value={descriptionNotes ?? ""} disabled={descriptionLocked} onChange={(event) => setDescriptionNotes(event.target.value)} />
+            <MentionAdoInput
+              as="textarea"
+              id="task-description"
+              className="textarea-input"
+              meetingId={meetingId}
+              value={descriptionNotes ?? ""}
+              disabled={descriptionLocked}
+              onChange={setDescriptionNotes}
+            />
             {descriptionLocked && <div className="locked-note">Only the Task's Assignee can edit Description/Notes.</div>}
           </div>
+
+          {task && <AdoReferenceList references={references} />}
+          {task && (
+            <CommentThread
+              meetingId={meetingId}
+              comments={comments}
+              canComment={canComment}
+              isLoading={commentsLoading}
+              onPost={postComment}
+            />
+          )}
         </div>
         <div className="modal-foot">
           {canDelete && <button className="btn btn-secondary" style={{ color: "var(--danger)", marginRight: "auto" }} onClick={handleDelete} disabled={isSaving}>Delete Task</button>}

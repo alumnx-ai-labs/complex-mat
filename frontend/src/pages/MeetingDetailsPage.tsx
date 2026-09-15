@@ -74,6 +74,7 @@ export function MeetingDetailsPage() {
 
       {editingTask !== undefined && (
         <TaskEditModal
+          meetingId={meeting.id}
           attendees={meeting.attendees}
           ownerId={meeting.ownerId}
           currentUserId={user.id}

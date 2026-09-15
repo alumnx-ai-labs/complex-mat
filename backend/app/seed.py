@@ -2,6 +2,7 @@ from app.core.config import get_settings
 from app.core.security import hash_password
 from app.db.session import Base, SessionLocal, engine
 from app.models.activity_log import ActivityLogEntry  # noqa: F401
+from app.models.comment import Comment, CommentMention, TaskAdoReference  # noqa: F401
 from app.models.meeting import Meeting, MeetingAttendee  # noqa: F401
 from app.models.task import Task  # noqa: F401
 from app.models.user import Role, User
