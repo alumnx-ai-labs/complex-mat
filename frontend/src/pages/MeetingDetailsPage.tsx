@@ -15,7 +15,10 @@ export function MeetingDetailsPage() {
   const { meeting, isLoading, error, refresh, deleteMeeting } = useMeetingDetail(
     meetingId ? Number(meetingId) : null,
   );
-  const { createTask, updateTask, deleteTask } = useTasks(Number(meetingId), refresh);
+  const { createTask, updateTask, updateStatus, deleteTask } = useTasks(
+    Number(meetingId),
+    refresh,
+  );
   const [editingTask, setEditingTask] = useState<Task | null | undefined>(undefined);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -113,7 +116,12 @@ export function MeetingDetailsPage() {
             </button>
           )}
         </div>
-        <TaskBoard tasks={meeting.tasks} onOpenTask={(task) => setEditingTask(task)} />
+        <TaskBoard
+          tasks={meeting.tasks}
+          currentUserId={user.id}
+          onStatusChange={(taskId, status) => updateStatus(taskId, status)}
+          onOpenTask={(task) => setEditingTask(task)}
+        />
       </div>
 
       {editingTask !== undefined && (

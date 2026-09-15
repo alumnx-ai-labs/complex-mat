@@ -29,6 +29,17 @@ export function useTasks(meetingId: number, onChange: () => void | Promise<void>
     }
   }, [onChange]);
 
+  const updateStatus = useCallback(async (taskId: number, status: TaskStatus) => {
+    setIsSubmitting(true);
+    try {
+      const task = await tasksApi.updateTaskStatus(taskId, status);
+      await onChange();
+      return task;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [onChange]);
+
   const deleteTask = useCallback(async (taskId: number) => {
     setIsSubmitting(true);
     try {
@@ -39,7 +50,7 @@ export function useTasks(meetingId: number, onChange: () => void | Promise<void>
     }
   }, [onChange]);
 
-  return { createTask, updateTask, deleteTask, isSubmitting };
+  return { createTask, updateTask, updateStatus, deleteTask, isSubmitting };
 }
 
 export function useMyTasks() {
