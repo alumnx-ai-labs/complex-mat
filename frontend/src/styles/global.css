@@ -9,7 +9,10 @@
   --primary-tint: #eaf0fb;
   --green: #1a7f4e;
   --green-tint: #e7f6ee;
+  --gray: #6b7280;
   --gray-tint: #eef0f3;
+  --amber: #9a6b00;
+  --amber-tint: #fff4dd;
   --danger: #b3261e;
   --danger-tint: #fdecea;
 }
@@ -393,6 +396,47 @@ textarea {
 .pill-owner {
   background: var(--primary-tint);
   color: var(--primary-dark);
+}
+
+.pill-admin {
+  background: var(--amber-tint);
+  color: var(--amber);
+}
+
+.pill-team {
+  background: var(--gray-tint);
+  color: var(--gray);
+}
+
+.pill-active {
+  background: var(--green-tint);
+  color: var(--green);
+}
+
+.pill-inactive {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+}
+
+td {
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--border);
 }
 
 .chip {

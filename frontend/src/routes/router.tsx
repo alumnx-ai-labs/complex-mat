@@ -10,6 +10,7 @@ import { EditMeetingPage } from "../pages/EditMeetingPage";
 import { LoginPage } from "../pages/LoginPage";
 import { MeetingDetailsPage } from "../pages/MeetingDetailsPage";
 import { MyTasksPage } from "../pages/MyTasksPage";
+import { PeoplePage } from "../pages/PeoplePage";
 
 function RequireAuth({ title, children }: { title: string; children: ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -105,7 +106,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth title="People">
         <RequireAdmin>
-          <PlaceholderPage title="People" />
+          <PeoplePage />
         </RequireAdmin>
       </RequireAuth>
     ),

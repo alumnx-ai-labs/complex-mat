@@ -66,6 +66,14 @@ class MeetingRepository:
     def is_attendee(self, meeting: Meeting, user_id: int) -> bool:
         return any(attendee.user_id == user_id for attendee in meeting.attendees)
 
+    def list_owned_by(self, user_id: int) -> list[Meeting]:
+        stmt = (
+            select(Meeting)
+            .where(Meeting.owner_id == user_id)
+            .options(selectinload(Meeting.attendees))
+        )
+        return list(self.db.scalars(stmt).all())
+
     def delete(self, meeting: Meeting) -> None:
         self.db.delete(meeting)
         self.db.flush()
