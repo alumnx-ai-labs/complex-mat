@@ -6,6 +6,7 @@ const BACKEND_PORT = 8000;
 export const ADMIN_MAIL_ID = process.env.E2E_ADMIN_MAIL_ID ?? "john@example.com";
 export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "ChangeMe123!";
 
+const rawBaseURL = process.env.PLAYWRIGHT_BASE_URL;
 const REMOTE_BASE_URL = rawBaseURL
   ? /^https?:\/\//.test(rawBaseURL)
     ? rawBaseURL
@@ -42,27 +43,29 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: [
-    {
-      command: "npm run dev -- --port 5173 --strictPort",
-      cwd: import.meta.dirname,
-      url: `http://localhost:${FRONTEND_PORT}`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-    },
-    {
-      command:
-        "node -e \"require('fs').rmSync('e2e-test.db', { force: true })\" && python -m app.seed && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
-      cwd: `${import.meta.dirname}/../backend`,
-      url: `http://localhost:${BACKEND_PORT}/docs`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-      env: {
-        DATABASE_PATH: "./e2e-test.db",
-        CORS_ORIGINS: `http://localhost:${FRONTEND_PORT}`,
-        DEFAULT_ADMIN_MAIL_ID: ADMIN_MAIL_ID,
-        DEFAULT_ADMIN_PASSWORD: ADMIN_PASSWORD,
-      },
-    },
-  ],
+  webServer: REMOTE_BASE_URL
+    ? undefined
+    : [
+        {
+          command: "npm run dev -- --port 5173 --strictPort",
+          cwd: import.meta.dirname,
+          url: `http://localhost:${FRONTEND_PORT}`,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+        },
+        {
+          command:
+            "node -e \"require('fs').rmSync('e2e-test.db', { force: true })\" && python -m app.seed && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+          cwd: `${import.meta.dirname}/../backend`,
+          url: `http://localhost:${BACKEND_PORT}/docs`,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+          env: {
+            DATABASE_PATH: "./e2e-test.db",
+            CORS_ORIGINS: `http://localhost:${FRONTEND_PORT}`,
+            DEFAULT_ADMIN_MAIL_ID: ADMIN_MAIL_ID,
+            DEFAULT_ADMIN_PASSWORD: ADMIN_PASSWORD,
+          },
+        },
+      ],
 });
