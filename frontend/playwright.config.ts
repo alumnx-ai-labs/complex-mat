@@ -24,6 +24,10 @@ export default defineConfig({
   reporter: process.env.CI
     ? [["junit", { outputFile: "playwright-report/results.xml" }], ["html", { open: "never" }]]
     : "html",
+  expect: {
+    // Remote hosts (e.g. Render free tier) can cold-start in tens of seconds.
+    timeout: REMOTE_BASE_URL ? 20_000 : 5_000,
+  },
   use: {
     baseURL: REMOTE_BASE_URL ?? `http://localhost:${FRONTEND_PORT}`,
     trace: "on-first-retry",
