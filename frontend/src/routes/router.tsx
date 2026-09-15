@@ -10,6 +10,7 @@ import { EditMeetingPage } from "../pages/EditMeetingPage";
 import { LoginPage } from "../pages/LoginPage";
 import { MeetingDetailsPage } from "../pages/MeetingDetailsPage";
 import { MyTasksPage } from "../pages/MyTasksPage";
+import { PreviousMeetingsPage } from "../pages/PreviousMeetingsPage";
 
 function RequireAuth({ title, children }: { title: string; children: ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -96,7 +97,7 @@ export const router = createBrowserRouter([
     path: "/previous-meetings",
     element: (
       <RequireAuth title="Previous Meetings">
-        <PlaceholderPage title="Previous Meetings" />
+        <PreviousMeetingsPage />
       </RequireAuth>
     ),
   },
