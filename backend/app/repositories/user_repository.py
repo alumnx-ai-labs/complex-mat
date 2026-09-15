@@ -26,3 +26,9 @@ class UserRepository:
             )
         stmt = stmt.order_by(User.employee_name)
         return list(self.db.scalars(stmt).all())
+
+    def mark_terms_accepted(self, user: User) -> User:
+        user.terms_accepted = True
+        self.db.flush()
+        self.db.refresh(user)
+        return user

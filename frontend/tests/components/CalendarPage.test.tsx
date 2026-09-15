@@ -11,7 +11,7 @@ import { useEffect } from "react";
 function SignInThenRender() {
   const { login } = useAuth();
   useEffect(() => {
-    login("user@example.com", "Password123!");
+    login("user@example.com", "Password123!", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <CalendarPage />;
@@ -33,6 +33,7 @@ describe("CalendarPage", () => {
         employeeId: "E0001",
         role: "ADMIN",
         isActive: true,
+        termsAccepted: true,
       },
     });
     vi.spyOn(meetingsApi, "listMeetings").mockResolvedValue([]);
@@ -59,6 +60,7 @@ describe("CalendarPage", () => {
         employeeId: "E0001",
         role: "ADMIN",
         isActive: true,
+        termsAccepted: true,
       },
     });
     const today = new Date();

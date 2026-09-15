@@ -25,6 +25,7 @@ export function LoginPage() {
   const [selectedOption, setSelectedOption] = useState<SignInOption>("ADMIN");
   const [employeeMailId, setEmployeeMailId] = useState("");
   const [password, setPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,7 +34,7 @@ export function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login(employeeMailId, password);
+      await login(employeeMailId, password, termsAccepted);
       navigate("/", { replace: true });
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -110,7 +111,20 @@ export function LoginPage() {
           </p>
         )}
 
-        <button type="submit" className="login-btn" disabled={isSubmitting}>
+        <div className="field-row" style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+          <input
+            type="checkbox"
+            id="termsAccepted"
+            checked={termsAccepted}
+            onChange={(event) => setTermsAccepted(event.target.checked)}
+            style={{ marginTop: "3px" }}
+          />
+          <label htmlFor="termsAccepted" style={{ fontSize: "12px", cursor: "pointer" }}>
+            I agree to the Terms and Conditions
+          </label>
+        </div>
+
+        <button type="submit" className="login-btn" disabled={isSubmitting || !termsAccepted}>
           Sign In
         </button>
 

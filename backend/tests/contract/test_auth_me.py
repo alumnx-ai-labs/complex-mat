@@ -13,6 +13,7 @@ def test_me_with_valid_token_returns_current_user(client: TestClient, make_user,
     assert body["id"] == user.id
     assert body["employeeMailId"] == user.employee_mail_id
     assert body["role"] == "ADMIN"
+    assert body["termsAccepted"] is False
 
 
 def test_me_without_token_is_rejected(client: TestClient):

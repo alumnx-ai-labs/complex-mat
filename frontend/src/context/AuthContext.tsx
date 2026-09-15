@@ -14,7 +14,7 @@ interface StoredSession {
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (employeeMailId: string, password: string) => Promise<AuthUser>;
+  login: (employeeMailId: string, password: string, termsAccepted: boolean) => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -43,8 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user: session?.user ?? null,
       isAuthenticated: session !== null,
-      login: async (employeeMailId: string, password: string) => {
-        const response = await authApi.login(employeeMailId, password);
+      login: async (employeeMailId: string, password: string, termsAccepted: boolean) => {
+        const response = await authApi.login(employeeMailId, password, termsAccepted);
         const nextSession: StoredSession = {
           accessToken: response.accessToken,
           user: response.user,

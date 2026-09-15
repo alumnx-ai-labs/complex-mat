@@ -12,7 +12,7 @@ import * as tasksApi from "../../src/services/tasksApi";
 function SignInAsSarah({ children }: { children: React.ReactNode }) {
   const { login } = useAuth();
   useEffect(() => {
-    login("sarah@example.com", "Password123!");
+    login("sarah@example.com", "Password123!", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <>{children}</>;
@@ -34,6 +34,7 @@ describe("My Tasks page", () => {
         employeeId: "E1042",
         role: "TEAM_MEMBER",
         isActive: true,
+        termsAccepted: true,
       },
     });
   }

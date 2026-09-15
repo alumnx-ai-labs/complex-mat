@@ -1,34 +1,48 @@
 # Phase 1 Data Model: Meeting Action Tracker (MAT)
 
 This document describes the persisted entities, their fields, relationships, and validation rules,
-reflecting the spec's Key Entities section refined into concrete database-level structures.
+reflecting the spec's Key Entities section refined into concrete database-level structures, as
+amended 2026-09-15 for the reverted local, file-based (SQLite) storage approach and the reverted
+Employee Mail ID/Password + Admin-creates-accounts authentication model (see
+[research.md](./research.md) items 1, 3, 9, 10). Every entity is a SQLAlchemy declarative model
+backed by a table of its plural snake_case form (e.g. `users`, `meetings`, `tasks`); every `id`/
+foreign-key field is an auto-incrementing integer primary key.
 
 ## User
 
-Represents one workspace member's account — the only identity concept in MAT; there is no separate
-"Person" concept.
+Represents one workspace member's account, created only by an Admin from the People screen's "Add
+Member" action — the only identity concept in MAT; there is no separate "Person" concept and no
+self-registration path.
 
 | Field | Type | Notes |
 |---|---|---|
 | `id` | integer/UUID, primary key | Unique user identifier |
-| `employee_name` | string, required | Display name shown throughout MAT |
-| `employee_mail_id` | string, required, unique | Sign-in identifier and notification address (FR-001) |
-| `employee_id` | string, required, unique | Internal employee identifier; searchable alongside `employee_name` (FR-011, FR-026) |
-| `password_hash` | string, required | Never stored/returned in plain text |
-| `role` | enum: `ADMIN`, `TEAM_MEMBER` | Exactly one per user (FR-003) |
+| `employee_name` | string, required | Display name shown throughout MAT; set by the Admin at account creation |
+| `employee_mail_id` | string, required, unique | Sign-in identifier and notification address; set by the Admin at account creation (FR-001) |
+| `employee_id` | string, required, unique | Internal employee identifier; set by the Admin at account creation |
+| `password_hash` | string, required | Hashed Password (never stored or returned as plaintext); Admin-set at creation and Admin-resettable thereafter (FR-005) |
+| `role` | enum: `ADMIN`, `TEAM_MEMBER` | Exactly one per user (FR-003); set at account creation and changeable only by an Admin afterward (FR-004, FR-005) |
 | `is_active` | boolean, default `true` | `false` after deactivation (FR-006) |
+| `terms_accepted` | boolean, default `false` | Set to `true` the first time this account signs in successfully after checking "I agree to the Terms and Conditions" (FR-046) |
 | `created_at` | timestamp, server-set | Record creation time |
 
 **Relationships**: a User may be the `owner` of many Meetings (1:N), an Attendee of many Meetings
-(M:N via `MeetingAttendee`), the Assignee of many Tasks (1:N), the author of many Comments (1:N),
-and the `actor` of many ActivityLogEntry rows (1:N).
+(M:N via `MeetingAttendee`), the Assignee of many Tasks (1:N), the author of many
+Comments (1:N), and the `actor` of many ActivityLogEntry rows (1:N).
 
 **Validation rules**:
-- `employee_mail_id` is unique across all users (FR-001).
-- Only a user with `role == ADMIN` may create, update, or deactivate/reactivate another User
-  (FR-004, FR-005); a user may not change their own `role`.
-- A deactivated (`is_active == false`) user MUST be rejected at login and MUST be excluded from
-  attendee/assignee search results (FR-006).
+- `employee_mail_id` and `employee_id` are each unique across all users (FR-001, FR-004).
+- A User is created only by an Admin via `user_service.create_member` (the People screen's "Add
+  Member" action), capturing Employee Name, Employee Mail ID, Employee ID, Password, and Role —
+  there is no self-registration path (FR-004). Only an Admin may change an existing User's `role`,
+  reset their `password_hash`, or change `is_active` afterward (FR-005); a user may not change
+  their own `role` or reset their own Password.
+- A deactivated (`is_active == false`) user MUST be rejected at sign-in — even with a correct
+  Employee Mail ID and Password — and MUST be excluded from attendee/assignee search results
+  (FR-006).
+- Sign-in MUST be rejected unless the Login screen's "I agree to the Terms and Conditions" checkbox
+  was checked (FR-045); on a successful sign-in, `terms_accepted` MUST be set to `true` for that
+  account (FR-046).
 
 ## Meeting
 
@@ -188,7 +202,9 @@ Consolidates *who* may write *what*, as enforced by the service layer (constitut
 
 | Field | Who may write it | Enforcement point |
 |---|---|---|
-| `User.*` (create, role, password, active) | Any Admin, for any user | `user_service.create_user` / `update_role` / `reset_password` / `set_active` |
+| `User` creation | Only an Admin, via the People screen's "Add Member" action | `user_service.create_member` |
+| `User.role`, `password_hash`, `is_active` (after creation) | Any Admin, for any user (never the user themself) | `user_service.update_role` / `reset_password` / `set_active` *(not yet implemented — User Story 9)* |
+| `User.terms_accepted` | System only — set on the user's own successful sign-in | `auth_service.sign_in` |
 | `Meeting.title`, `date`, `time`, `agenda_notes`, attendees | Any Admin | `meeting_service.create_meeting` / `update_meeting` |
 | `Meeting.owner_id` | System only — set at creation; changed only by the deactivation-transfer routine | `meeting_service.create_meeting`, `user_service.set_active` |
 | `Task.title`, `due_date` | Any Admin (the Meeting Owner is also an Admin) | `task_service.create_task` / `update_task` |

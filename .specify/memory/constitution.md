@@ -1,17 +1,25 @@
 <!--
 Sync Impact Report
 ===================
-Version change: 1.0.0 → 2.0.0
-Rationale for MAJOR: Principle V is redefined in a backward-incompatible way. It previously
-PROHIBITED login, password authentication, sessions/tokens, and Admin/User role-based access
-control for the MVP. It now REQUIRES all of them, per the project's Business Requirements
-Document (BRD), which is adopted here as the authoritative scope for this project — the earlier
-MVP identity simplification is superseded.
+Version change: 3.0.0 → 4.0.0
+Rationale for MAJOR: The Technology Stack & Constraints "Database" line is redefined in a
+backward-incompatible way, reverting the previous (3.0.0) amendment. It REQUIRED MongoDB (a
+document database) as the single source of truth; it now REQUIRES a local, file-based database
+(e.g., SQLite or an equivalent local engine) again, per a direct product decision to stay on
+SQLite rather than migrate to MongoDB. The codebase has been migrated back to SQLAlchemy/SQLite
+accordingly.
 
 Modified principles:
-  - V. Simplified Identity for MVP → V. Authenticated, Role-Based Identity (BRD-Aligned)
+  - IV. Centralized Data Ownership — no change to its normative rules (already storage-engine-
+    agnostic since the 3.0.0 amendment); still requires a centralized backend database and still
+    prohibits browser storage as a source of truth.
 
-Added sections: None (existing section structure retained).
+Modified sections:
+  - Technology Stack & Constraints — "Database" bullet changed from "MongoDB (a document
+    database)" back to "a local, file-based database (e.g., SQLite or an equivalent local
+    database engine)".
+
+Added sections: None.
 
 Removed sections: None.
 
@@ -20,14 +28,14 @@ Deviation from user-supplied source text: None for this amendment.
 Deferred / TODO placeholders: None. All bracketed template tokens have been replaced.
 
 Templates requiring follow-up review (not modified by this command; read constitution at runtime):
-  - .specify/templates/plan-template.md — verify Constitution Check references reflect the new
-    Principle V (auth/RBAC now required, not prohibited).
-  - .specify/templates/spec-template.md — no direct dependency expected.
-  - .specify/templates/tasks-template.md — verify task categorization accounts for an auth/RBAC
-    layer, People/Admin screens, and Meeting Owner enforcement.
-  - specs/001-meeting-action-tracker/spec.md, plan.md, data-model.md, contracts/, research.md,
-    quickstart.md — written against the superseded MVP identity model; require regeneration
-    against the full BRD scope now that Principle V permits/requires auth and roles.
+  - .specify/templates/plan-template.md — no direct dependency expected (the storage engine is a
+    plan-level decision already recorded in plan.md).
+  - specs/001-meeting-action-tracker/data-model.md, research.md, contracts/ — require reverting
+    their MongoDB-specific language (ObjectId-string ids, document/collection framing) back to
+    SQLAlchemy/integer-id framing to stay consistent with this change.
+  - specs/001-meeting-action-tracker/tasks.md — Phase 3's MongoDB migration tasks (T041-T048) and
+    Phase 4's T052/T054/T057 are no longer applicable and should be marked accordingly, not
+    implemented.
 -->
 
 # Meeting Action Tracker (MAT) Constitution
@@ -67,7 +75,8 @@ visible to more than one user or session) MUST be persisted in the central backe
 Browser-only storage (`localStorage`, `sessionStorage`, `IndexedDB`, cookies) MUST NOT be used as
 the primary or source-of-truth store for application data — it MAY only be used for transient,
 per-device UI convenience (e.g., a collapsed sidebar state) that has no effect on shared data
-correctness.
+correctness. This principle is agnostic to the specific database engine, which the Technology
+Stack & Constraints section below designates.
 **Rationale**: Centralized storage guarantees every user and session sees consistent, durable
 data and avoids divergent, unrecoverable client-side state.
 
@@ -176,4 +185,4 @@ at the top of this file and the version/date footer below.
 constitution (see Development Workflow & Quality Gates above). Any exception MUST be documented
 with its justification at the point of use; undocumented deviations MUST be treated as defects.
 
-**Version**: 2.0.0 | **Ratified**: 2026-09-13 | **Last Amended**: 2026-09-13
+**Version**: 4.0.0 | **Ratified**: 2026-09-13 | **Last Amended**: 2026-09-15

@@ -19,6 +19,7 @@ const OWNER = {
   employeeId: "E0001",
   role: "ADMIN" as const,
   isActive: true,
+  termsAccepted: true,
 };
 
 const ASSIGNEE = { id: 7, employeeName: "Sarah Iyer" };
@@ -52,7 +53,7 @@ function meetingDetail(): MeetingDetail {
 function SignInAs({ user, children }: { user: typeof OWNER; children: React.ReactNode }) {
   const { login } = useAuth();
   useEffect(() => {
-    login(user.employeeMailId, "Password123!");
+    login(user.employeeMailId, "Password123!", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <>{children}</>;

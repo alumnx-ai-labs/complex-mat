@@ -13,7 +13,7 @@ import * as usersApi from "../../src/services/usersApi";
 function SignInAsAdmin({ children }: { children: React.ReactNode }) {
   const { login } = useAuth();
   useEffect(() => {
-    login("john@example.com", "Password123!");
+    login("john@example.com", "Password123!", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <>{children}</>;
@@ -36,6 +36,7 @@ describe("Create meeting flow", () => {
         employeeId: "E0001",
         role: "ADMIN",
         isActive: true,
+        termsAccepted: true,
       },
     });
     vi.spyOn(usersApi, "searchUsers").mockResolvedValue([
