@@ -6,25 +6,44 @@
 
 **Status**: Draft
 
+**Amended**: 2026-09-14 — The database switched from a local file-based store to MongoDB (see
+plan.md).
+
+**Amended**: 2026-09-15 — Reverted the 2026-09-14 MongoDB switch. The database is a local,
+file-based store (SQLite) again, as originally specified; MongoDB is no longer part of this
+specification (see plan.md, data-model.md, and constitution v4.0.0).
+
+**Amended**: 2026-09-15 — Reverted an interim change to Google Sign-In. Authentication is
+Employee Mail ID/Password again, exactly as the BRD specifies: no self-registration, and only an
+Admin creates member accounts (Employee Name, Employee Mail ID, Employee ID, Password, Role) from
+the People screen's "Add Member" action. There is no Google/Firebase sign-in and no self-service
+account auto-provisioning anywhere in this specification.
+
 **Input**: User description: "Build the complete Meeting Action Tracker (MAT) application exactly as described in the Business Requirements Document (BRD.docx), which is the authoritative source of truth for this project. MAT is a single shared workspace for one internal organisation's meetings and the tasks that come out of them. Core requirements: (1) Authentication & Roles — Employee Mail ID/Password login, no self-registration, only an Admin creates member accounts (Employee Name, Employee Mail ID, Employee ID, Password, Role) from a People screen, exactly two roles (Admin, Team Member), Login shows Team Member/Admin sign-in as visually separate options but both check the same credentials and the account's actual Role determines access. (2) Meetings — only an Admin creates a Meeting, only from Calendar; selecting a date opens Create Meeting prefilled with it; fields are Title, Date, Time, Attendees (via internal member search), Agenda/Notes; the creating Admin becomes the Meeting Owner; any Admin may edit or delete any Meeting; deleting cascades to its Tasks; Team Members see only Meetings they're invited to, Admins see all. (3) Tasks — one Meeting, one Assignee; fields Task Title, Description/Notes, Assignee, Due Date, Status (To Do/In Progress/Completed); only the Meeting Owner assigns/reassigns the Assignee; Assignee must be a Meeting Attendee; Team Members drag their own cards between columns; an Assignee may edit only their own Task's Status and Description/Notes and cannot delete it; a deactivated/removed Assignee keeps the assignment but is flagged for reassignment. (4) My Tasks — every Task assigned to the authenticated user across all their Meetings, labelled with its parent Meeting, same columns/permissions. (5) Internal Member Search — Attendees searched across all members; Task Assignee searched only within that Meeting's Attendees. (6) Task Comments & @Mentions — Meeting Owner, Assignee, or any Admin can comment; \"@\" plus letters searches that Meeting's Attendees for a mention. (7) Azure DevOps Integration — no dedicated reference field; \"@<number>\" typed in Title/Description/Comments auto-links an existing Story/Feature, distinct from a mention by digits vs letters; suggestions are scoped to the current user's own Azure DevOps access; each Linked Item shows as \"ADO #<id> — <title>\" with an \"Open in Azure DevOps\" action; referencing never creates/modifies a work item; an unavailable/deleted item shows an unavailable indicator with the Open action disabled; MAT stays usable if Azure DevOps is down. (8) Notifications — email on Task assignment, on a new comment (unless the Assignee authored it), and on an @mention; delivery failure never blocks the underlying action. (9) People screen (Admin only) — add a member, and per-member edit Role, reset Password, or deactivate/reactivate; deactivation blocks sign-in and removes the member from search; if a Meeting Owner is deactivated, ownership of their Meetings transfers to the workspace's configured default Admin. (10) Activity Log (Admin only) — records actor, action, and timestamp for key actions across Meetings, Tasks, People, Notifications, Mentions, and Azure DevOps references. (11) Navigation covers Login, Calendar, Create/Edit Meeting, Meeting Details with its Task Board, My Tasks, Task Details, Previous Meetings, and the Admin-only People and Activity Log screens. (12) Responsive Design — fully usable on desktop and mobile, following the provided mockup's visual direction."
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Sign In and Reach the Shared Workspace (Priority: P1)
 
-A person opens the application and signs in with their Employee Mail ID and Password. Whether they used the Team Member or Admin sign-in option, the workspace they land in — and everything they can see and do there — matches their account's actual Role.
+A person opens the application and signs in with the Employee Mail ID and Password an Admin gave
+them, entering their credentials on either the Team Member or the Admin sign-in option (visually
+separate, but both check the same stored credentials). The workspace they land in — and
+everything they can see and do there — matches their account's actual stored Role, regardless of
+which sign-in option they used.
 
 **Why this priority**: Nothing else is reachable without this; it is the entry gate, and getting Role-based access wrong undermines every other guarantee in the system (who can create a meeting, assign a task, or see People/Activity Log).
 
-**Independent Test**: Can be fully tested by signing in with a Team Member account and confirming Admin-only screens and actions are unavailable, then signing in with an Admin account and confirming they are available — without creating any meeting or task.
+**Independent Test**: Can be fully tested by an Admin creating one Team Member account and one Admin account from the People screen, then signing in with each set of credentials — via either sign-in option — and confirming Admin-only screens and actions are unavailable for the Team Member account and available for the Admin account.
 
 **Acceptance Scenarios**:
 
-1. **Given** the Login screen, **When** a person enters a valid Employee Mail ID and Password on either the Team Member or the Admin sign-in option, **Then** they are signed in and their experience matches their account's actual Role, not the option they clicked.
-2. **Given** the Login screen, **When** a person enters an invalid Employee Mail ID/Password combination, **Then** they are not signed in and are told the credentials are invalid.
+1. **Given** an Admin has created a member account with an Employee Mail ID and Password, **When** that person enters those credentials on either the Team Member or the Admin sign-in option and submits, **Then** they are signed in with their account's actual stored Role, regardless of which option they used.
+2. **Given** the Login screen, **When** a person submits an Employee Mail ID and Password that do not match any account, or that match a deactivated account, **Then** they are not signed in and are told their credentials are incorrect.
 3. **Given** a signed-in Team Member, **When** they look for People or Activity Log navigation, **Then** those destinations are not available to them.
 4. **Given** a signed-in Admin, **When** they view navigation, **Then** Calendar, My Tasks, Previous Meetings, People, and Activity Log are all available.
-5. **Given** no account has self-registered, **When** the Login screen is viewed, **Then** there is no sign-up option — only an Admin can create an account.
+5. **Given** the Login screen, **When** it is viewed, **Then** there is no sign-up form — every account comes into existence only via an Admin's "Add Member" action on the People screen.
+6. **Given** the Login screen, **When** the "I agree to the Terms and Conditions" checkbox is unchecked, **Then** sign-in is disabled and cannot proceed on either sign-in option.
+7. **Given** the Login screen, **When** a person checks the "I agree to the Terms and Conditions" checkbox and then signs in successfully, **Then** their acceptance of the Terms and Conditions is recorded against their account.
 
 ---
 
@@ -42,7 +61,7 @@ An Admin opens Calendar, selects a date, and is taken to Create Meeting with tha
 2. **Given** an Admin selects a date on Calendar, **When** Create Meeting opens, **Then** its Date field is already filled with the selected date.
 3. **Given** the Create Meeting form is open, **When** the Admin submits without a Title, **Then** the meeting is not saved and they are told a Title is required.
 4. **Given** a valid Title, Date, Time, at least one Attendee, and optional Agenda/Notes, **When** the Admin saves, **Then** the meeting is created with a unique ID, those field values, and that Admin recorded as Meeting Owner.
-5. **Given** the Admin is adding Attendees, **When** they search, **Then** results come from all internal workspace members (not only that meeting's current attendees), searchable by Employee Name or Employee ID.
+5. **Given** the Admin is adding Attendees, **When** they search, **Then** results come from all internal workspace members (not only that meeting's current attendees), searchable by display name or email address.
 6. **Given** a meeting was just created, **When** a different person's session views the calendar, **Then** the new meeting is visible to them if their Role/invitation allows it, without manual re-entry.
 
 ---
@@ -156,22 +175,25 @@ A person opens Previous Meetings and sees a list of meetings already created —
 
 ---
 
-### User Story 9 - Admin Manages People (Priority: P3)
+### User Story 9 - Admin Manages Member Accounts, Roles, and Access (Priority: P3)
 
-An Admin opens the People screen to add a new member — supplying Employee Name, Employee Mail ID, Employee ID, Password, and Role — and can later change any member's Role, reset their Password, or deactivate/reactivate them, all from that same screen.
+An Admin opens the People screen and can add a new member (Employee Name, Employee Mail ID,
+Employee ID, Password, Role), and for any existing member can change their Role, reset their
+Password, or deactivate/reactivate them.
 
-**Why this priority**: Account provisioning is required before anyone besides the first Admin can sign in, but it is an administrative back-office task, not part of the core meeting/task workflow being exercised day to day.
+**Why this priority**: Ongoing account and access management is an administrative back-office task, not part of the core meeting/task workflow being exercised day to day; it is, however, the only way a new person gains access at all (see User Story 1), since there is no self-registration.
 
-**Independent Test**: Can be fully tested by an Admin adding a member with a chosen Role, confirming that member can then sign in and gets the permissions of that Role, then deactivating the member and confirming they can no longer sign in or appear in attendee/assignee search.
+**Independent Test**: Can be fully tested by having an Admin add a new member from the People screen, confirming that member can sign in with the credentials given to them, confirming an Admin can change their Role and reset their Password, then deactivating the member and confirming they can no longer sign in or appear in attendee/assignee search.
 
 **Acceptance Scenarios**:
 
 1. **Given** a Team Member is signed in, **When** they try to reach People, **Then** it is not available to them.
-2. **Given** an Admin completes Add Member with all required fields, **When** they save, **Then** a new account is created and that member can sign in with the given Employee Mail ID and Password, with the permissions of the assigned Role.
+2. **Given** the People screen, **When** an Admin adds a member with Employee Name, Employee Mail ID, Employee ID, Password, and Role, **Then** a new account is created with those values and that member can sign in with that Employee Mail ID and Password.
 3. **Given** an existing member, **When** an Admin changes their Role, **Then** the member has the new Role's permissions the next time they access the workspace.
-4. **Given** an existing member, **When** an Admin resets their Password, **Then** the member must use the new Password to sign in, and the new credential is understood to be communicated to them outside the system (not auto-emailed).
-5. **Given** an existing member, **When** an Admin deactivates them, **Then** they can no longer sign in, and they no longer appear in attendee or assignee search.
-6. **Given** a deactivated member was the Meeting Owner of one or more meetings, **When** their deactivation is saved, **Then** ownership of all of those meetings transfers automatically to the workspace's configured default Admin.
+4. **Given** an existing member, **When** an Admin resets their Password, **Then** they can no longer sign in with their old Password and can sign in with the new one.
+5. **Given** an existing member, **When** an Admin deactivates them, **Then** they can no longer sign in — even with a correct Employee Mail ID and Password — and they no longer appear in attendee or assignee search.
+6. **Given** a deactivated member, **When** an Admin reactivates them, **Then** they can sign in again with their Employee Mail ID and Password and regain their prior Role's access.
+7. **Given** a deactivated member was the Meeting Owner of one or more meetings, **When** their deactivation is saved, **Then** ownership of all of those meetings transfers automatically to the workspace's configured default Admin.
 
 ---
 
@@ -193,7 +215,8 @@ An Admin opens Activity Log and sees a record of who did what and when across me
 
 ### Edge Cases
 
-- What happens when someone selects the "Admin" sign-in option but their account's Role is Team Member (or vice versa)? The option clicked is cosmetic only; the account's actual Role determines their access either way.
+- What happens when someone selects the "Admin" sign-in option but their account's Role is Team Member (or vice versa)? The option clicked is cosmetic only; the account's actual stored Role determines their access either way.
+- What happens when the same account signs in from multiple devices or browser sessions? It resolves to the same single account and the same Role in every session; no duplicate account is created.
 - What happens when a Task's Assignee is deactivated or removed from the meeting's Attendee list? The Task keeps its existing assignment but is flagged as needing reassignment; the system does not auto-assign a replacement.
 - What happens when a Meeting Owner is deactivated? Ownership of all of their meetings transfers automatically to the workspace's configured default Admin.
 - What happens when typing "@" and nothing or letters follow? A member-mention search of that meeting's Attendees appears. When digits follow instead? Azure DevOps Story/Feature suggestions appear. The two are always disambiguated this way.
@@ -204,22 +227,23 @@ An Admin opens Activity Log and sees a record of who did what and when across me
 - What happens when a Meeting is deleted? All of its Tasks are deleted with it, in a single cascading action recorded once in the Activity Log.
 - What happens when the same attendee name is searched and added twice to one meeting? The system treats attendees as a de-duplicated set per meeting.
 - What happens when a Team Member who is not an Attendee of a meeting tries to browse to it directly? It does not appear in their Calendar or Previous Meetings, and its details are not accessible to them.
+- What happens when a person tries to sign in without checking the "I agree to the Terms and Conditions" checkbox? Sign-in remains disabled on both sign-in options and no sign-in attempt is possible until the checkbox is checked.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST require a valid Employee Mail ID and Password before granting any access to the workspace; there MUST be no self-registration path.
-- **FR-002**: The system MUST let a person choose between visually separate Team Member and Admin sign-in options, but MUST validate both against the same Employee Mail ID/Password check and MUST determine the resulting access solely by the account's actual Role, never by which option was clicked.
+- **FR-001**: The system MUST require a successful Employee Mail ID/Password sign-in before granting any access to the workspace; there MUST be no manual sign-up form.
+- **FR-002**: The system MUST let a person choose between visually separate Team Member and Admin sign-in options, both of which MUST validate the submitted Employee Mail ID and Password against the same stored credentials. The resulting access MUST be determined solely by the account's actual stored Role, never by which option is used.
 - **FR-003**: The system MUST support exactly two roles — Admin and Team Member — with every account having exactly one Role at a time.
-- **FR-004**: Only an Admin MUST be able to create a new member account, and only from the People screen, capturing Employee Name, Employee Mail ID, Employee ID, Password, and Role.
-- **FR-005**: Only an Admin MUST be able to change an existing member's Role, reset their Password, or deactivate/reactivate them, all from the People screen.
-- **FR-006**: A deactivated member MUST be unable to sign in and MUST no longer appear in attendee or assignee search results.
+- **FR-004**: Only an Admin MUST be able to create a new member account, from the People screen's "Add Member" action, capturing Employee Name, Employee Mail ID, Employee ID, Password, and Role; no self-registration path MUST exist.
+- **FR-005**: Only an Admin MUST be able to change an existing member's Role, reset their Password, or deactivate/reactivate them, from the People screen.
+- **FR-006**: A deactivated member MUST be unable to sign in — even with a correct Employee Mail ID and Password — and MUST no longer appear in attendee or assignee search results.
 - **FR-007**: The system MUST let only an Admin create a new Meeting, and only from the Calendar view.
 - **FR-008**: Selecting a date on the Calendar MUST open Create Meeting with that date already filled in.
 - **FR-009**: The system MUST reject saving a new Meeting that is missing a Title or a Date.
 - **FR-010**: A Meeting MUST be stored with a unique ID, Title, Date, Time, Attendees, Agenda/Notes, and a Meeting Owner equal to the Admin who created it; the Meeting Owner field MUST be system-assigned and MUST NOT be directly editable by anyone.
-- **FR-011**: Attendees MUST be added to a Meeting via a search across all internal workspace members by Employee Name or Employee ID.
+- **FR-011**: Attendees MUST be added to a Meeting via a search across all internal workspace members by display name or email address.
 - **FR-012**: Any Admin MUST be able to edit or delete any Meeting, regardless of who its Meeting Owner is; Team Members MUST NOT be able to create, edit, or delete Meetings.
 - **FR-013**: Deleting a Meeting MUST delete all of its Tasks as part of that same action.
 - **FR-014**: A Team Member MUST see only Meetings they are an Attendee of, in Calendar and Previous Meetings; an Admin MUST see all Meetings.
@@ -234,7 +258,7 @@ An Admin opens Activity Log and sees a record of who did what and when across me
 - **FR-023**: A Task's Assignee MUST NOT be able to delete that Task.
 - **FR-024**: When a Task's Assignee is deactivated or removed from the parent Meeting's Attendee list, the Task MUST keep its existing assignment and MUST be flagged as needing reassignment; the system MUST NOT automatically assign a replacement.
 - **FR-025**: The system MUST provide a "My Tasks" view showing every Task assigned to the current authenticated person across all Meetings they can access, each labelled with its parent Meeting's name, using the same Status columns, drag-and-drop, and edit permissions as that Meeting's own Task Board.
-- **FR-026**: Assigning a Task MUST search only within that Meeting's Attendees, by Employee Name or Employee ID.
+- **FR-026**: Assigning a Task MUST search only within that Meeting's Attendees, by display name or email address.
 - **FR-027**: The system MUST let the Meeting Owner, the Task's Assignee, or any Admin post comments on a Task; no one else MUST be able to.
 - **FR-028**: Typing "@" followed by nothing or by letters, in a Task's Title, Description/Notes, or a comment, MUST open a search of that Meeting's Attendees for selecting a member mention (e.g., "@John").
 - **FR-029**: Typing "@" followed by digits, in the same three places, MUST show Azure DevOps Story/Feature suggestions instead of a member-mention search, each showing at least ID, Title, and Type, scoped to the current authenticated user's own Azure DevOps access.
@@ -253,10 +277,12 @@ An Admin opens Activity Log and sees a record of who did what and when across me
 - **FR-042**: The system's navigation MUST expose exactly these destinations, gated by Role: Calendar, My Tasks, and Previous Meetings for every signed-in person, plus People and Activity Log for Admins only.
 - **FR-043**: Any change made by one person (creating/editing/deleting a meeting or task, changing a task's status, posting a comment, managing a person) MUST become visible to other people permitted to see that data from a different session or device, without requiring anything beyond normal navigation/refresh.
 - **FR-044**: The system MUST remain fully usable, with all actions reachable and no loss of functionality, on both desktop and mobile-sized screens.
+- **FR-045**: The Login screen MUST present an "I agree to the Terms and Conditions" checkbox, and sign-in MUST remain disabled on both sign-in options until that checkbox is checked; sign-in MUST NOT be possible while it is unchecked.
+- **FR-046**: On a successful sign-in, the system MUST record that the signed-in account has accepted the Terms and Conditions.
 
 ### Key Entities
 
-- **User**: A workspace member's account. Key attributes: unique ID, Employee Name, Employee Mail ID (sign-in identifier and notification address), Employee ID, Password (Admin-set/reset), Role (Admin or Team Member), Active flag. Can be a Meeting Owner, an Attendee, a Task Assignee, or a comment author.
+- **User**: A workspace member's account, created only by an Admin from the People screen. Key attributes: unique ID, Employee Name, Employee Mail ID (sign-in identifier and notification address), Employee ID, Password (Admin-set and Admin-resettable), Role (Admin or Team Member; set at creation, changeable only by an Admin afterward), Active flag, Terms Accepted flag (set when the person checks "I agree to the Terms and Conditions" to sign in). Can be a Meeting Owner, an Attendee, a Task Assignee, or a comment author.
 - **Meeting**: A scheduled meeting. Key attributes: unique ID, Title, Date, Time, Attendees (a set of Users), Agenda/Notes, Meeting Owner (the creating Admin, system-assigned and read-only). Owns a collection of Tasks.
 - **Task**: A single action item belonging to exactly one Meeting. Key attributes: unique ID, Task Title, Description/Notes, `meetingId`, Assignee (one Attendee of the parent Meeting), Due Date, Status (`To Do`, `In Progress`, or `Completed`), and a needs-reassignment flag. Owns a collection of Comments and derives a collection of Linked Azure DevOps Items.
 - **Comment**: A message posted against a Task. Key attributes: unique ID, author, message text, timestamp, the mentions and Azure DevOps reference tokens it contains.
@@ -280,9 +306,8 @@ An Admin opens Activity Log and sees a record of who did what and when across me
 
 ## Assumptions
 
-- **BRD is authoritative and fully in scope.** This specification implements the complete BRD.docx feature set (authentication, Admin/Team Member roles, Meeting Owner, Edit/Delete Meeting, Task Description/Notes and Due Date, comments and @mentions, Azure DevOps referencing, email notifications, People, and Activity Log). The provided mockup (`mockup.html`) is used for visual/layout direction (screen names, field names, status values, and action names) consistent with the BRD.
+- **BRD is authoritative and fully in scope.** This specification implements the complete BRD.docx feature set, including its original Employee Mail ID/Password authentication, Admin-only account-creation model (People "Add Member"), and local, file-based (SQLite) database. The 2026-09-14 switch to MongoDB was reverted on 2026-09-15 — no amendment to the original BRD-specified storage approach remains in effect. A brief, interim switch to Google Sign-In was likewise made and reverted on 2026-09-15; this specification reflects the reverted (original BRD) authentication model. The provided mockup (`mockup.html`) is used for visual/layout direction (screen names, field names, status values, and action names), consistent with the BRD's Employee Mail ID/Password login.
 - **A single "default Admin" is configured for meeting-ownership continuity.** The BRD requires that a deactivated Meeting Owner's meetings transfer to "the workspace's configured default Admin"; this specification assumes exactly one such Admin is designated for the workspace at any time, without prescribing how that designation is made (an implementation-level configuration concern for planning).
-- **Passwords are communicated out of band.** Consistent with the BRD, newly set or reset passwords are handed to the member directly by an Admin, not emailed automatically by the system.
-- **Out of scope, per the BRD**: self-registration; any external identity system or single sign-on; creating, editing, or syncing Azure DevOps work items from MAT; referencing Azure DevOps work item types other than Story and Feature; notification channels other than email; multiple assignees per task; external/guest meeting attendees; and any general-purpose chat feature separate from task comments.
+- **Out of scope**: creating, editing, or syncing Azure DevOps work items from MAT; referencing Azure DevOps work item types other than Story and Feature; notification channels other than email; multiple assignees per task; external/guest meeting attendees; any general-purpose chat feature separate from task comments; and any external identity system or single sign-on (including Google Sign-In) — sign-in is Employee Mail ID/Password only.
 - **No removal of the Meeting Owner role from a meeting.** A Meeting always has exactly one Meeting Owner (its creator, or the configured default Admin after an ownership transfer); this specification does not include manually reassigning ownership to an arbitrary different Admin outside of the deactivation-triggered transfer.
 - **Mobile and desktop breakpoints** follow standard responsive web practice (a single-column, stacked layout on narrow/mobile widths; multi-column grid/board layouts on wider/desktop widths), consistent with the mockup's visual direction.

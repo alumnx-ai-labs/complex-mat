@@ -9,5 +9,6 @@ class UserResponse(CamelModel):
     employee_id: str
     role: Role
     is_active: bool
+    terms_accepted: bool
 
     model_config = CamelModel.model_config | {"from_attributes": True}

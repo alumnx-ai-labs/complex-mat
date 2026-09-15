@@ -10,7 +10,7 @@ import * as authApi from "../../src/services/authApi";
 function SignInAs() {
   const { login } = useAuth();
   useEffect(() => {
-    login("user@example.com", "Password123!");
+    login("user@example.com", "Password123!", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <NavSidebar />;
@@ -32,6 +32,7 @@ describe("Role-gated navigation", () => {
         employeeId: "E1042",
         role: "TEAM_MEMBER",
         isActive: true,
+        termsAccepted: true,
       },
     });
 
@@ -62,6 +63,7 @@ describe("Role-gated navigation", () => {
         employeeId: "E0001",
         role: "ADMIN",
         isActive: true,
+        termsAccepted: true,
       },
     });
 

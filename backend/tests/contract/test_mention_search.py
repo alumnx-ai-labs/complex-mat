@@ -20,9 +20,8 @@ def test_mention_search_is_scoped_to_meeting_attendees(client, make_user, make_m
 
 def test_mention_search_filters_by_query(client, make_user, make_meeting, auth_header):
     owner, _ = make_user(role=Role.ADMIN)
-    sarah, _ = make_user(role=Role.TEAM_MEMBER)
+    sarah, _ = make_user(role=Role.TEAM_MEMBER, employee_name="Sarah Iyer")
     meeting = make_meeting(owner, [sarah])
-    sarah.employee_name = "Sarah Iyer"
 
     response = client.get(
         f"/api/meetings/{meeting.id}/attendees/mention-search?q=zzz",

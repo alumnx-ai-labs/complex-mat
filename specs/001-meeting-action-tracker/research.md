@@ -12,8 +12,13 @@ email notifications — on top of that stack. No `[NEEDS CLARIFICATION]` markers
 - **Rationale**: The constitution specifies a "local, file-based database." SQLite requires no
   separate server process and is sufficient for this scope's data volume; SQLAlchemy gives the
   repository layer a clean, swappable data-access boundary if a heavier database is needed later.
+  *(A 2026-09-14 amendment briefly switched this decision to MongoDB; it was reverted on
+  2026-09-15 back to SQLite, per constitution v4.0.0.)*
 - **Alternatives considered**: A client/server database (PostgreSQL) — rejected as an unnecessary
-  deployment dependency for the constitution's "local database" framing at this scale.
+  deployment dependency for the constitution's "local database" framing at this scale; MongoDB — a
+  brief 2026-09-14 amendment, reverted 2026-09-15 (no benefit over SQLite/SQLAlchemy at this
+  scope, and it would have forced every entity id from an integer to a string across the whole
+  stack for no functional gain).
 
 ## 2. Backend web framework structure
 
@@ -26,37 +31,43 @@ email notifications — on top of that stack. No `[NEEDS CLARIFICATION]` markers
 
 ## 3. Authentication and role enforcement
 
-- **Decision**: Password-based login (Employee Mail ID + Password) issuing a short-lived JWT access
-  token, returned to the client and sent back as a `Bearer` token on every subsequent request. The
-  backend hashes passwords with a modern KDF (e.g., bcrypt/argon2) — no password is ever stored or
-  logged in plain text. A FastAPI dependency `get_current_user` decodes and validates the token and
-  loads the `User`; a second dependency `require_role(Role.ADMIN)` (or similar) wraps it for
-  Admin-only routers/endpoints (People, Activity Log, Create/Edit/Delete Meeting). Meeting-Owner-only
-  actions (assigning/reassigning a Task's Assignee) are enforced as an explicit service-layer check
-  (`meeting.owner_id == current_user.id`) rather than a role check, since ownership is per-meeting,
-  not a role.
-- **Rationale**: Constitution Principle V (as amended) requires Employee Mail ID/Password
-  authentication and a two-role RBAC model; Principle VII requires these rules enforced in the
-  backend, not just hidden UI controls. A stateless JWT keeps the API RESTful (Principle VI) without
-  server-side session storage. Distinguishing "Role" (Admin/Team Member) from "Meeting Owner" (a
-  per-meeting attribute) mirrors the BRD's explicit distinction between the two.
-- **Alternatives considered**: Server-side session cookies — rejected as it adds session-store
-  infrastructure with no benefit over a signed JWT at this scale; OAuth/SSO — explicitly out of
-  scope per the BRD ("no self-registration... no external identity system").
+- **Decision** *(2026-09-15 revert)*: Employee Mail ID/Password credentials, verified by the
+  backend itself. Passwords are hashed with `passlib`/`bcrypt` (never stored or logged in
+  plaintext). `POST /api/auth/login` (see [auth-api.md](./contracts/auth-api.md)) validates the
+  submitted Employee Mail ID/Password against the stored `password_hash`, rejects a deactivated
+  account, records `terms_accepted = true` on the matched account when the request confirms the
+  Terms-and-Conditions checkbox was checked (FR-046), and returns a signed JWT (`python-jose`)
+  whose access token is the API's bearer credential thereafter. Every other endpoint's
+  `get_current_user` dependency verifies that JWT and resolves the `User` it identifies.
+  `require_role(Role.ADMIN)` and a `require_meeting_owner` dependency wrap `get_current_user` for
+  Admin-only and Owner-only routes respectively. There is no self-registration endpoint; accounts
+  exist only via `POST /api/users` (Admin-only, People "Add Member" — see
+  [users-api.md](./contracts/users-api.md)).
+- **Rationale**: Constitution Principle V and spec.md's 2026-09-15 amendment restore the BRD's
+  original Employee Mail ID/Password + Admin-provisioned-account model, reverting the interim
+  2026-09-14 Google Sign-In/Firebase auto-provisioning change. Principle VII still requires these
+  rules enforced in the backend, not just hidden UI controls. Distinguishing "Role" from "Meeting
+  Owner" is unchanged from the original decision.
+- **Alternatives considered**: Re-adopting Google Sign-In/Firebase Authentication — rejected, since
+  the 2026-09-15 amendment explicitly reverts it; a server-side session store instead of a JWT —
+  rejected as unnecessary added infrastructure at this scale, when a signed, short-lived JWT already
+  satisfies "authentication required end-to-end" without a session table.
 
 ## 4. Frontend auth/session state
 
-- **Decision**: A React Context (`AuthContext`) holding the signed-in user (id, name, Role) and the
-  JWT, backed by `sessionStorage` so a reload keeps the session but closing the tab/browser ends it.
-  A route guard redirects unauthenticated visitors to Login, and a second guard hides/redirects
-  Admin-only routes (People, Activity Log, Create/Edit Meeting entry points) for Team Members.
-- **Rationale**: Centralizes "who is signed in and with what Role" in one place consumed by nav,
-  route guards, and permission-gated UI (e.g., the assign-task control shown only to the Meeting
-  Owner), consistent with constitution Principle II (API/session concerns isolated from
-  presentation).
-- **Alternatives considered**: `localStorage` for the token — rejected in favor of `sessionStorage`
-  to avoid an indefinitely-persisted credential on a shared machine, consistent with the project's
-  existing preference for session-scoped identity state.
+- **Decision** *(2026-09-15 revert)*: A React Context (`AuthContext`) holding the signed-in user and
+  the JWT returned by `POST /api/auth/login` (obtained via `authApi.ts`), backed by
+  `sessionStorage` so a reload keeps the session but closing the tab/browser ends it. The Login
+  screen renders visually separate Team Member/Admin sign-in options, Employee Mail ID and Password
+  fields, and an "I agree to the Terms and Conditions" checkbox that keeps the Sign In control
+  disabled until checked (FR-045); both options submit to the same `POST /api/auth/login`, and the
+  account's actual stored Role — not the option clicked — determines access (FR-002). Route guards
+  are unchanged (unauthenticated → Login; Admin-only routes hidden/redirected for Team Members).
+- **Rationale**: Centralizes "who is signed in and with what Role" in one place, unchanged from the
+  original rationale; keeping the login form's HTTP call inside `authApi.ts` (constitution
+  Principle II) is what lets tests mock login without a real network call.
+- **Alternatives considered**: `localStorage` for the token — rejected in favor of `sessionStorage`,
+  unchanged from the original decision.
 
 ## 5. Meeting Owner vs. Admin role enforcement
 
@@ -131,7 +142,9 @@ email notifications — on top of that stack. No `[NEEDS CLARIFICATION]` markers
 
 - **Decision**: A simple case-insensitive substring query (SQL `LIKE`) over `employee_name` and
   `employee_id`, scoped to all active users for Attendee search and to a given meeting's Attendees
-  for Assignee search — no full-text search engine.
+  for Assignee search — no full-text search engine. Spec.md FR-011/FR-026's "display name or email
+  address" wording (from the 2026-09-14 amendment) was confirmed wording-only, not a behavior
+  change — this search still matches `employee_name`/`employee_id`, not `employee_mail_id`.
 - **Rationale**: Matches the BRD's description of a simple name/ID lookup at internal-workspace
   scale; a dedicated search engine would be disproportionate infrastructure for this data volume,
   conflicting with constitution Principle IX (avoid premature complexity).
@@ -140,22 +153,28 @@ email notifications — on top of that stack. No `[NEEDS CLARIFICATION]` markers
 
 ## 10. Meeting Owner continuity on deactivation
 
-- **Decision**: The workspace has exactly one configured "default Admin" (a `Settings`/config row
-  referencing a `User.id`, set by seed/initial setup rather than through a dedicated UI in this
-  scope). Deactivating a user is a single service-layer operation that, if that user owns any
-  Meetings, reassigns `Meeting.owner_id` to the configured default Admin for every one of them, in
-  the same transaction as the deactivation.
+- **Decision** *(2026-09-15 revert)*: The workspace has exactly one configured "default Admin"
+  (`WorkspaceSettings.default_admin_user_id`), set by a one-time seed step that creates the very
+  first Admin account (Employee Name, Employee Mail ID, Employee ID, an initial Password, Role
+  `ADMIN`) when the `users` collection is empty — since accounts are otherwise only ever created by
+  an existing Admin via People "Add Member," something has to bootstrap the first one. Deactivating
+  a user remains a single service-layer operation that, if that user owns any Meetings, reassigns
+  `Meeting.owner_id` to the configured default Admin for every one of them, in the same transaction
+  as the deactivation (FR-040; User Story 9's deactivation logic is not yet implemented).
 - **Rationale**: The BRD requires automatic ownership transfer "to the workspace's configured
-  default Admin" on Meeting-Owner deactivation (FR-040); doing the reassignment in the same
-  transaction as the deactivation avoids a window where meetings are ownerless.
-- **Alternatives considered**: Leaving `owner_id` null until manually reassigned — rejected, since
+  default Admin" on Meeting-Owner deactivation (FR-040); with no self-registration or
+  auto-provisioning path (2026-09-15 revert), a one-time seed step is the only way to bootstrap the
+  first Admin/default Admin account.
+- **Alternatives considered**: Auto-provisioning the first Admin from an external identity
+  provider's first sign-in — rejected along with the rest of the 2026-09-14 Google
+  Sign-In/Firebase amendment; leaving `owner_id` null until manually reassigned — rejected, since
   the BRD requires the transfer to be automatic, not a follow-up manual step.
 
 ## 11. Activity Log
 
-- **Decision**: An append-only `ActivityLogEntry` table, written by a single `log_activity(actor,
+- **Decision**: An append-only `ActivityLogEntry` collection, written by a single `log_activity(actor,
   action, entity_type, entity_id)` service-layer helper called at the end of each significant
-  service method (meeting/task create-edit-delete, member add/role-change/password-reset/deactivate,
+  service method (meeting/task create-edit-delete, member auto-provisioned/role-change/deactivate,
   notification sent, mention made, Azure DevOps reference detected) — never written directly by a
   router.
 - **Rationale**: A single helper, called from the service layer where the business action already
@@ -163,7 +182,7 @@ email notifications — on top of that stack. No `[NEEDS CLARIFICATION]` markers
   per endpoint, and keeps routers free of business/audit logic per constitution Principle III.
 - **Alternatives considered**: Deriving the Activity Log from a generic request-level middleware —
   rejected, since it cannot easily express "which business action" occurred (e.g., distinguishing a
-  role change from a password reset, both `PATCH /users/{id}`) as precisely as an explicit call site.
+  role change from a deactivation, both `PATCH /users/{id}`) as precisely as an explicit call site.
 
 ## 12. Frontend drag-and-drop and calendar
 
@@ -190,3 +209,11 @@ email notifications — on top of that stack. No `[NEEDS CLARIFICATION]` markers
   external-integration-resilience cases.
 - **Alternatives considered**: End-to-end browser testing (e.g., Playwright) — not ruled out later,
   not required to satisfy Principle X at this scope.
+
+**Addendum** *(2026-09-15)*: Both suites stay fully offline against fakes, matching the original
+decision's spirit for external dependencies. Backend: the existing in-memory SQLite engine covers
+the Terms-and-Conditions login flow too — JWTs are issued/verified against a fixed test signing
+key with a fake `password_hash`/login fixture, no real external identity provider needed. Frontend:
+`authApi.login` is mocked at the module boundary exactly like `meetingsApi`/`usersApi` already are,
+including cases covering the Terms-and-Conditions checkbox disabling Sign In — no real backend call
+ever runs under `vitest`/`jsdom`.
