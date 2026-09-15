@@ -178,10 +178,15 @@ test.describe("People management (User Story 9)", () => {
     const member = uniqueMember("Owner To Deactivate");
     await addMember(page, { ...member, role: "ADMIN" });
 
+    // This test spans two browser contexts and a create+login+create+deactivate
+    // chain — the heaviest in this file — so its network-dependent assertions
+    // get explicit headroom rather than relying on the (shorter) local default.
+    const HEAVY_TIMEOUT = { timeout: 15_000 };
+
     const memberContext = await browser.newContext();
     const memberPage = await memberContext.newPage();
     await login(memberPage, member.mailId, member.password);
-    await expect(memberPage).toHaveURL(/\/calendar$/);
+    await expect(memberPage).toHaveURL(/\/calendar$/, HEAVY_TIMEOUT);
 
     const meetingTitle = `E2E Ownership Transfer ${Date.now()}`;
     const date = new Date().toISOString().slice(0, 10);
@@ -189,16 +194,16 @@ test.describe("People management (User Story 9)", () => {
     await memberPage.getByLabel("Title").fill(meetingTitle);
     await memberPage.getByLabel("Time").fill("14:00");
     await memberPage.getByRole("button", { name: "Save Meeting" }).click();
-    await expect(memberPage).toHaveURL(/\/meetings\/\d+$/);
-    await expect(memberPage.getByText(`Meeting Owner: ${member.name}`)).toBeVisible();
+    await expect(memberPage).toHaveURL(/\/meetings\/\d+$/, HEAVY_TIMEOUT);
+    await expect(memberPage.getByText(`Meeting Owner: ${member.name}`)).toBeVisible(HEAVY_TIMEOUT);
     const meetingUrl = memberPage.url();
     await memberContext.close();
 
     await page.goto("/people");
     await memberRow(page, member.mailId).getByRole("button", { name: "Deactivate" }).click();
-    await expect(memberRow(page, member.mailId).getByText("Inactive")).toBeVisible();
+    await expect(memberRow(page, member.mailId).getByText("Inactive")).toBeVisible(HEAVY_TIMEOUT);
 
     await page.goto(meetingUrl);
-    await expect(page.getByText("Meeting Owner: John Admin")).toBeVisible();
+    await expect(page.getByText("Meeting Owner: John Admin")).toBeVisible(HEAVY_TIMEOUT);
   });
 });

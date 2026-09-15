@@ -46,17 +46,23 @@ test.describe("Activity Log (User Story 10)", () => {
     await page.getByRole("button", { name: "Save Member" }).click();
     await expect(page.locator("tr", { hasText: member.mailId })).toBeVisible();
 
+    // This test spans two browser contexts (create the member here, then a
+    // fresh login as them), which makes it more exposed to timing pressure
+    // under load than the suite's single-context specs — give its
+    // network-dependent assertions explicit headroom accordingly.
+    const HEAVY_TIMEOUT = { timeout: 15_000 };
+
     const memberContext = await browser.newContext();
     const memberPage = await memberContext.newPage();
     await login(memberPage, member.mailId, member.password);
-    await expect(memberPage).toHaveURL(/\/calendar$/);
+    await expect(memberPage).toHaveURL(/\/calendar$/, HEAVY_TIMEOUT);
 
     await expect(
       memberPage.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: /Activity Log/ }),
     ).not.toBeVisible();
 
     await memberPage.goto("/activity-log");
-    await expect(memberPage).not.toHaveURL(/\/activity-log$/);
+    await expect(memberPage).not.toHaveURL(/\/activity-log$/, HEAVY_TIMEOUT);
 
     await memberContext.close();
   });
