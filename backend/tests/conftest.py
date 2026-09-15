@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.security import create_access_token, hash_password
 from app.db.session import Base, get_db
+from app.integrations.email_sender import EmailSender, get_email_sender
 from app.main import app
 from app.models.meeting import Meeting, MeetingAttendee
 from app.models.task import Task, TaskStatus
@@ -104,6 +105,22 @@ def make_meeting(db_session: Session):
         return meeting
 
     return _make_meeting
+
+
+class RecordingEmailSender(EmailSender):
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, str, str]] = []
+
+    def send(self, to_email: str, subject: str, body: str) -> None:
+        self.sent.append((to_email, subject, body))
+
+
+@pytest.fixture()
+def email_sender_spy(client: TestClient) -> Generator[RecordingEmailSender, None, None]:
+    spy = RecordingEmailSender()
+    app.dependency_overrides[get_email_sender] = lambda: spy
+    yield spy
+    del app.dependency_overrides[get_email_sender]
 
 
 @pytest.fixture()

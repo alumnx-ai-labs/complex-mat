@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ForbiddenError
 from app.db.session import get_db
 from app.deps.auth import get_current_user, require_meeting_owner
+from app.integrations.email_sender import EmailSender, get_email_sender
 from app.models.task import Task
 from app.models.user import Role, User
+from app.repositories.meeting_repository import MeetingRepository
+from app.repositories.task_repository import TaskRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.task import (
     TaskCreateRequest,
@@ -14,7 +17,7 @@ from app.schemas.task import (
     TaskUpdateRequest,
     TaskWithMeetingResponse,
 )
-from app.services import task_service
+from app.services import notification_service, task_service
 
 router = APIRouter(tags=["tasks"])
 
@@ -61,8 +64,10 @@ def list_my_tasks(
 def create_task(
     meeting_id: int,
     payload: TaskCreateRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_meeting_owner),
+    email_sender: EmailSender = Depends(get_email_sender),
 ) -> TaskResponse:
     task = task_service.create_task(
         db,
@@ -73,6 +78,12 @@ def create_task(
         description_notes=payload.description_notes,
         due_date=payload.due_date,
     )
+    meeting = MeetingRepository(db).get_by_id(meeting_id)
+    assignee = UserRepository(db).get_by_id(task.assignee_id)
+    if meeting is not None and assignee is not None:
+        background_tasks.add_task(
+            notification_service.notify_task_assigned, email_sender, task, meeting, assignee
+        )
     return task_to_response(db, task)
 
 
@@ -91,13 +102,26 @@ def update_task_status(
 def update_task(
     task_id: int,
     payload: TaskUpdateRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    email_sender: EmailSender = Depends(get_email_sender),
 ) -> TaskResponse:
     fields = payload.model_dump(exclude_unset=True)
     if not fields:
         raise ForbiddenError("At least one task field is required.")
+    previous_assignee_id = None
+    if "assignee_id" in fields:
+        existing = TaskRepository(db).get_by_id(task_id)
+        previous_assignee_id = existing.assignee_id if existing else None
     task = task_service.update_task(db, current_user, task_id, fields)
+    if "assignee_id" in fields and task.assignee_id != previous_assignee_id:
+        meeting = MeetingRepository(db).get_by_id(task.meeting_id)
+        assignee = UserRepository(db).get_by_id(task.assignee_id)
+        if meeting is not None and assignee is not None:
+            background_tasks.add_task(
+                notification_service.notify_task_assigned, email_sender, task, meeting, assignee
+            )
     return task_to_response(db, task)
 
 

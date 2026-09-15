@@ -248,10 +248,16 @@ CRITICAL (constitution) violations were found. See the in-session Convergence Fi
 - [ ] T031 Build `frontend/src/pages/TaskDetailsPage.tsx` (new route) with
   `CommentThread`/`CommentComposer` components implementing the "@" digit-vs-letter suggestion
   trigger, per US5 Acceptance Scenarios 1–6 (missing)
-- [ ] T032 Add `backend/app/integrations/email_sender.py` (`EmailSender` interface + SMTP
+- [X] T032 Add `backend/app/integrations/email_sender.py` (`EmailSender` interface + SMTP
   implementation) and `backend/app/services/notification_service.py`, invoked via FastAPI
   `BackgroundTasks` on task-assignment, comment, and mention events, per FR-034, FR-035, FR-036,
-  FR-037, FR-038 (missing)
+  FR-037, FR-038 (partial: task-assignment notification (FR-034, FR-037, FR-038) implemented and
+  wired into `POST /api/meetings/{meeting_id}/tasks` and `PATCH /api/tasks/{task_id}` reassignment
+  in `backend/app/api/tasks.py`, with tests in
+  `backend/tests/unit/test_notification_service.py` and
+  `backend/tests/integration/test_task_assignment_notifications.py`. Comment-posted (FR-035) and
+  mention-made (FR-036) notifications are NOT implemented — they depend on the Comment/mention
+  feature (US5, T028/T029), which does not exist in the codebase yet.)
 - [ ] T033 Add `PATCH /api/meetings/{meeting_id}` and `DELETE /api/meetings/{meeting_id}` to
   `backend/app/api/meetings.py` + `meeting_service.py`, Admin-only (not Owner-restricted), with
   cascading Task deletion, per FR-012, FR-013 (missing)
