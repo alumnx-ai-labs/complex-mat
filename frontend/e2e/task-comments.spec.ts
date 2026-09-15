@@ -30,14 +30,16 @@ async function createTask(
 
 async function openTask(page: Page, title: string): Promise<void> {
   await page.locator(".task-card-title", { hasText: title }).click();
-  await expect(page.getByRole("heading", { name: "Task Details" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "Task Details" })).toBeVisible({ timeout: 20_000 });
 }
 
 // These tests chain several sequential network round-trips (create meeting, create task,
 // open task, debounced mention/ADO lookup, post comment) on top of the base test cost, so
-// they need more headroom than the suite's simpler single-step specs.
-const NETWORK_HEAVY_TIMEOUT = 60_000;
-const ASSERTION_TIMEOUT = { timeout: 15_000 };
+// their assertions get more headroom than the suite's simpler single-step specs. The
+// per-test timeout itself is left to playwright.config.ts, which already scales it for
+// remote/cold-start runs (90s) vs. local (30s) — hardcoding it here would only shrink
+// that back down under PLAYWRIGHT_BASE_URL, which is exactly what happened before.
+const ASSERTION_TIMEOUT = { timeout: 20_000 };
 
 test.describe("Task comments, mentions, and Azure DevOps references", () => {
   test.beforeEach(async ({ page }) => {
@@ -45,7 +47,6 @@ test.describe("Task comments, mentions, and Azure DevOps references", () => {
   });
 
   test("Owner can post a comment and @mention an attendee", async ({ page }) => {
-    test.setTimeout(NETWORK_HEAVY_TIMEOUT);
     const meetingTitle = `E2E Comments ${Date.now()}`;
     const taskTitle = `Task ${Date.now()}`;
     await createMeeting(page, meetingTitle);
@@ -73,7 +74,6 @@ test.describe("Task comments, mentions, and Azure DevOps references", () => {
   test("an @<number> reference in a comment links an Azure DevOps item, shown as unavailable when ADO isn't configured", async ({
     page,
   }) => {
-    test.setTimeout(NETWORK_HEAVY_TIMEOUT);
     const meetingTitle = `E2E ADO Comment ${Date.now()}`;
     const taskTitle = `Task ${Date.now()}`;
     await createMeeting(page, meetingTitle);
@@ -92,7 +92,6 @@ test.describe("Task comments, mentions, and Azure DevOps references", () => {
   test("an @<number> reference in the Task Description is linked as an Azure DevOps item on the task", async ({
     page,
   }) => {
-    test.setTimeout(NETWORK_HEAVY_TIMEOUT);
     const meetingTitle = `E2E ADO Description ${Date.now()}`;
     const taskTitle = `Task ${Date.now()}`;
     await createMeeting(page, meetingTitle);
