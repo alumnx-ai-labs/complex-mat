@@ -8,6 +8,15 @@ const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "COMPLETED", label: "Completed" },
 ];
 
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
 export function TaskCard({
   task,
   onStatusChange,
@@ -35,11 +44,22 @@ export function TaskCard({
       data-dragging={isDragging || undefined}
       onClick={onOpen}
     >
-      <div {...listeners} {...attributes} className="task-card-drag">
-        <div className="task-card-title" onMouseDown={onOpen} onClick={onOpen}>{task.title}</div>
-        {task.meetingTitle && <div className="chip">{task.meetingTitle}</div>}
-        {task.dueDate && <div className="muted task-card-due">Due {task.dueDate}</div>}
+      <div {...listeners} {...attributes} className="task-card-drag" onMouseDown={onOpen}>
+        {task.meetingTitle && <div className="t-meeting">{task.meetingTitle}</div>}
+        <div className="t-title">{task.title}</div>
+        <div className="t-meta">
+          <span>Due {task.dueDate ?? "—"}</span>
+          {task.assigneeName && (
+            <span className="avatar" title={task.assigneeName}>
+              {initials(task.assigneeName)}
+            </span>
+          )}
+        </div>
       </div>
+
+      {task.needsReassignment && (
+        <div className="flag">⚠ Assignee needs reassignment (inactive or no longer an attendee)</div>
+      )}
 
       <div className="field-row">
         <label className="field-label" htmlFor={`task-status-${task.id}`}>

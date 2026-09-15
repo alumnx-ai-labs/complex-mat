@@ -598,6 +598,37 @@ td {
   margin-top: 6px;
 }
 
+.task-card .t-meeting {
+  font-size: 10.5px;
+  color: var(--primary);
+  font-weight: 700;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.task-card[data-dragging] {
+  opacity: 0.6;
+}
+
+.task-card-drag {
+  cursor: grab;
+}
+
+.board-col.dz[data-over] {
+  background: var(--primary-tint);
+}
+
+.task-card .field-row {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.task-card-edit {
+  margin-top: 8px;
+  width: 100%;
+}
+
 .locked-note {
   font-size: 11.5px;
   color: var(--muted);
@@ -810,86 +841,6 @@ td {
   .app-content {
     padding: 24px;
   }
-
-  .task-board {
-    flex-direction: row;
-  }
-
-  .task-column {
-    flex: 1;
-  }
-}
-
-/* ---------- Task board / My Tasks ---------- */
-
-.task-board {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.task-column {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  min-width: 0;
-}
-
-.task-column[data-over] {
-  background: var(--primary-tint);
-}
-
-.task-column-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.task-column-body {
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 48px;
-}
-
-.task-card {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 10px;
-}
-
-.task-card[data-dragging] {
-  opacity: 0.6;
-}
-
-.task-card-drag {
-  cursor: grab;
-}
-
-.task-card-title {
-  font-weight: 600;
-  font-size: 13.5px;
-  margin-bottom: 4px;
-}
-
-.task-card-due {
-  margin-top: 4px;
-  font-size: 12px;
-}
-
-.task-card .field-row {
-  margin-top: 8px;
-}
-
-.task-card-edit {
-  margin-top: 8px;
-  width: 100%;
 }
 
 .modal-backdrop {

@@ -42,7 +42,7 @@ export function TaskBoard({
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="task-board">
+      <div className="board">
         {COLUMNS.map((column) => (
           <TaskColumn
             key={column.status}
