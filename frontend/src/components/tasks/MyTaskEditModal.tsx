@@ -1,6 +1,11 @@
 import { useState, type FormEvent } from "react";
 
+import { useComments } from "../../hooks/useComments";
+import { useTaskAdoReferences } from "../../hooks/useAdoReferences";
 import type { TaskWithMeeting } from "../../services/tasksApi";
+import { AdoReferenceList } from "./AdoReferenceList";
+import { CommentThread } from "./CommentThread";
+import { MentionAdoInput } from "./MentionAdoInput";
 
 export function MyTaskEditModal({
   task,
@@ -13,6 +18,8 @@ export function MyTaskEditModal({
 }) {
   const [descriptionNotes, setDescriptionNotes] = useState(task.descriptionNotes ?? "");
   const [isSaving, setIsSaving] = useState(false);
+  const { comments, isLoading: commentsLoading, postComment } = useComments(task.id);
+  const { references } = useTaskAdoReferences(task.id);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -37,7 +44,14 @@ export function MyTaskEditModal({
         <form onSubmit={handleSubmit}>
           <div className="field-row">
             <label className="field-label" htmlFor="my-task-description-notes">Description / Notes</label>
-            <textarea id="my-task-description-notes" className="textarea-input" value={descriptionNotes} onChange={(event) => setDescriptionNotes(event.target.value)} />
+            <MentionAdoInput
+              as="textarea"
+              id="my-task-description-notes"
+              className="textarea-input"
+              meetingId={task.meetingId}
+              value={descriptionNotes}
+              onChange={setDescriptionNotes}
+            />
             <div className="hint">Only Description/Notes can be edited here.</div>
           </div>
           <div className="modal-foot">
@@ -45,6 +59,15 @@ export function MyTaskEditModal({
             <button type="submit" className="btn btn-primary" disabled={isSaving}>Save</button>
           </div>
         </form>
+
+        <AdoReferenceList references={references} />
+        <CommentThread
+          meetingId={task.meetingId}
+          comments={comments}
+          canComment
+          isLoading={commentsLoading}
+          onPost={postComment}
+        />
       </div>
     </div>
   );

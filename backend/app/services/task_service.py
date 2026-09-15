@@ -9,6 +9,7 @@ from app.models.task import Task, TaskStatus
 from app.models.user import Role, User
 from app.repositories.meeting_repository import MeetingRepository
 from app.repositories.task_repository import TaskRepository
+from app.services.reference_service import sync_task_content_references
 
 
 def _get_meeting_or_404(db: Session, meeting_id: int) -> Meeting:
@@ -43,13 +44,15 @@ def create_task(
     if owner.id != meeting.owner_id:
         raise ForbiddenError("Only the Meeting Owner may assign a Task's Assignee.")
     _validate_assignee(db, meeting, assignee_id)
-    return TaskRepository(db).create(
+    task = TaskRepository(db).create(
         meeting_id=meeting.id,
         title=title,
         assignee_id=assignee_id,
         description_notes=description_notes,
         due_date=due_date,
     )
+    sync_task_content_references(db, task.id, meeting.id, task.title, task.description_notes)
+    return task
 
 
 def list_my_tasks(db: Session, current_user: User) -> list[tuple[Task, str]]:
@@ -71,7 +74,9 @@ def update_task_description(
     task = _get_task_or_404(db, task_id)
     if task.assignee_id != current_user.id:
         raise ForbiddenError("Only this task's Assignee may edit its Description/Notes.")
-    return TaskRepository(db).update_description_notes(task, description_notes)
+    task = TaskRepository(db).update_description_notes(task, description_notes)
+    sync_task_content_references(db, task.id, task.meeting_id, task.title, task.description_notes)
+    return task
 
 
 def update_task(db: Session, current_user: User, task_id: int, fields: dict[str, Any]) -> Task:
@@ -95,7 +100,12 @@ def update_task(db: Session, current_user: User, task_id: int, fields: dict[str,
         raise ForbiddenError(f"You are not permitted to change: {', '.join(sorted(disallowed))}.")
     if "assignee_id" in fields:
         _validate_assignee(db, meeting, fields["assignee_id"])
-    return TaskRepository(db).update(task, **fields)
+    task = TaskRepository(db).update(task, **fields)
+    if "title" in fields or "description_notes" in fields:
+        sync_task_content_references(
+            db, task.id, task.meeting_id, task.title, task.description_notes
+        )
+    return task
 
 
 def delete_task(db: Session, current_user: User, task_id: int) -> None:

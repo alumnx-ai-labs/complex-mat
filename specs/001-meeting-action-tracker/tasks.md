@@ -234,20 +234,30 @@ CRITICAL (constitution) violations were found. See the in-session Convergence Fi
   an add-task form scoped to the meeting's Attendees, a per-task Assignee-reassignment control
   visible only to the Meeting Owner, and a delete control visible only to Admins, reusing
   `frontend/src/components/tasks/*` from Phase 1, per US3 Acceptance Scenarios 1–6 (missing)
-- [ ] T028 Add `Comment`/`CommentMention`/`TaskAdoReference` models in
+- [X] T028 Add `Comment`/`CommentMention`/`TaskAdoReference` models in
   `backend/app/models/comment.py` and `GET`/`POST /api/tasks/{task_id}/comments` per
   [comments-api.md](./contracts/comments-api.md), enforcing that only the Meeting Owner, the
-  Task's Assignee, or any Admin may post, per FR-027 (missing)
-- [ ] T029 Add `@Name` mention search (`GET
+  Task's Assignee, or any Admin may post, per FR-027
+- [X] T029 Add `@Name` mention search (`GET
   /api/meetings/{meeting_id}/attendees/mention-search`) and `@<number>` Azure DevOps token
   parsing into `TaskAdoReference` rows, disambiguated by letters vs. digits, per FR-028, FR-029,
-  FR-030 (missing)
-- [ ] T030 Add `backend/app/integrations/azure_devops_client.py` (fail-soft `AzureDevOpsClient`)
+  FR-030. Also applied to a Task's own `title`/`description_notes` (not just Comments) via
+  `reference_service.sync_task_content_references`, called from `task_service.create_task`,
+  `update_task`, and `update_task_description` — required by FR-030's "Title, Description/Notes,
+  or Comments" wording and US5 Acceptance Scenario 4.
+- [X] T030 Add `backend/app/integrations/azure_devops_client.py` (fail-soft `AzureDevOpsClient`)
   and `GET /api/azure-devops/suggestions` + `GET /api/tasks/{task_id}/ado-references` per
-  [azure-devops-api.md](./contracts/azure-devops-api.md), per FR-031, FR-032, FR-033 (missing)
-- [ ] T031 Build `frontend/src/pages/TaskDetailsPage.tsx` (new route) with
-  `CommentThread`/`CommentComposer` components implementing the "@" digit-vs-letter suggestion
-  trigger, per US5 Acceptance Scenarios 1–6 (missing)
+  [azure-devops-api.md](./contracts/azure-devops-api.md), per FR-031, FR-032, FR-033. `search()`
+  resolves the typed digits as a direct work-item-ID lookup rather than a true prefix search,
+  since the Azure DevOps REST API has no numeric-ID prefix search without the optional Search
+  extension.
+- [X] T031 Add a `CommentThread`/`MentionAdoInput`/`AdoReferenceList` component set and surface
+  them from the existing `TaskEditModal` (Owner/Admin, opened from `MeetingDetailsPage`) and
+  `MyTaskEditModal` (Assignee, opened from `MyTasksPage`) — both already function as this app's
+  "Task Details" view (the Task's own Title/Description inputs also route through
+  `MentionAdoInput` for the same "@" trigger) — per US5 Acceptance Scenarios 1–6, rather than
+  building a separate `TaskDetailsPage`/route as originally sketched, since Task Board access
+  already funnels through exactly the Owner/Admin/Assignee actors FR-027 permits.
 - [X] T032 Add `backend/app/integrations/email_sender.py` (`EmailSender` interface + SMTP
   implementation) and `backend/app/services/notification_service.py`, invoked via FastAPI
   `BackgroundTasks` on task-assignment, comment, and mention events, per FR-034, FR-035, FR-036,
@@ -256,8 +266,9 @@ CRITICAL (constitution) violations were found. See the in-session Convergence Fi
   in `backend/app/api/tasks.py`, with tests in
   `backend/tests/unit/test_notification_service.py` and
   `backend/tests/integration/test_task_assignment_notifications.py`. Comment-posted (FR-035) and
-  mention-made (FR-036) notifications are NOT implemented — they depend on the Comment/mention
-  feature (US5, T028/T029), which does not exist in the codebase yet.)
+  mention-made (FR-036) notifications are still NOT implemented — T028/T029's Comment/mention
+  feature now exists in the codebase (merged from upstream), but its comment-posted and
+  mention-made events are not yet wired to `notification_service`.)
 - [ ] T033 Add `PATCH /api/meetings/{meeting_id}` and `DELETE /api/meetings/{meeting_id}` to
   `backend/app/api/meetings.py` + `meeting_service.py`, Admin-only (not Owner-restricted), with
   cascading Task deletion, per FR-012, FR-013 (missing)

@@ -844,3 +844,38 @@ textarea {
   max-height: 90vh;
   overflow-y: auto;
 }
+
+/* ---------- Comments & Azure DevOps references ---------- */
+
+.chip a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.chip a:hover {
+  text-decoration: underline;
+}
+
+.comment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+.comment-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.comment-meta {
+  margin-bottom: 4px;
+  font-size: 12.5px;
+}
+
+.comment-message {
+  font-size: 13.5px;
+  white-space: pre-wrap;
+}
