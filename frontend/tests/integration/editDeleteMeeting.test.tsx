@@ -19,6 +19,7 @@ const OWNER = {
   employeeId: "E0001",
   role: "ADMIN" as const,
   isActive: true,
+  termsAccepted: true,
 };
 
 const OTHER_ADMIN = {
@@ -28,6 +29,7 @@ const OTHER_ADMIN = {
   employeeId: "E0009",
   role: "ADMIN" as const,
   isActive: true,
+  termsAccepted: true,
 };
 
 const TEAM_MEMBER = {
@@ -37,6 +39,7 @@ const TEAM_MEMBER = {
   employeeId: "E1042",
   role: "TEAM_MEMBER" as const,
   isActive: true,
+  termsAccepted: true,
 };
 
 function meetingDetail(): MeetingDetail {
@@ -59,7 +62,7 @@ function meetingDetail(): MeetingDetail {
 function SignInAs({ user, children }: { user: AuthUser; children: React.ReactNode }) {
   const { login } = useAuth();
   useEffect(() => {
-    login(user.employeeMailId, "Password123!");
+    login(user.employeeMailId, "Password123!", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <>{children}</>;

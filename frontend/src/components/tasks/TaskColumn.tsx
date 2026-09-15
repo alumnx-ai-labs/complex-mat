@@ -21,23 +21,21 @@ export function TaskColumn({
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
-    <div ref={setNodeRef} className="task-column" data-over={isOver || undefined}>
-      <div className="task-column-header">
-        <span>{label}</span>
-        <span className="pill">{tasks.length}</span>
+    <div ref={setNodeRef} className="board-col dz" data-over={isOver || undefined}>
+      <div className="board-col-head">
+        <span className="title">{label}</span>
+        <span className="count">{tasks.length}</span>
       </div>
-      <div className="task-column-body">
-        {tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            onStatusChange={(nextStatus) => onStatusChange?.(task.id, nextStatus)}
-            onEdit={() => onEdit?.(task)}
-            onOpen={() => onOpenTask?.(task)}
-          />
-        ))}
-        {tasks.length === 0 && <p className="muted">No tasks here.</p>}
-      </div>
+      {tasks.map((task) => (
+        <TaskCard
+          key={task.id}
+          task={task}
+          onStatusChange={(nextStatus) => onStatusChange?.(task.id, nextStatus)}
+          onEdit={() => onEdit?.(task)}
+          onOpen={() => onOpenTask?.(task)}
+        />
+      ))}
+      {tasks.length === 0 && <p className="muted">No tasks here.</p>}
     </div>
   );
 }

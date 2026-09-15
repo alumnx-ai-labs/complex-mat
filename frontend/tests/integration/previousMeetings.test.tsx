@@ -16,12 +16,13 @@ const ADMIN = {
   employeeId: "E0001",
   role: "ADMIN" as const,
   isActive: true,
+  termsAccepted: true,
 };
 
 function SignInAsAdmin({ children }: { children: React.ReactNode }) {
   const { login } = useAuth();
   useEffect(() => {
-    login(ADMIN.employeeMailId, "Password123!");
+    login(ADMIN.employeeMailId, "Password123!", true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <>{children}</>;
