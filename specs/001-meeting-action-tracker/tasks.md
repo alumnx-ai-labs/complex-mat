@@ -284,9 +284,16 @@ CRITICAL (constitution) violations were found. See the in-session Convergence Fi
   Scenarios 1–4. Reuses the existing `MeetingForm` (with `dateEditable`) from Create Meeting; Delete
   prompts a native confirm before calling `DELETE` and navigating back to Calendar. Test:
   `frontend/tests/integration/editDeleteMeeting.test.tsx`.
-- [ ] T035 Implement `frontend/src/pages/PreviousMeetingsPage.tsx` (replacing its
+- [X] T035 Implement `frontend/src/pages/PreviousMeetingsPage.tsx` (replacing its
   `PlaceholderPage`), listing meetings via the existing `GET /api/meetings` with title/date/task
-  count and a link into Meeting Details, per FR-039 (missing)
+  count and a link into Meeting Details, per FR-039. Table layout (Title/Date/Meeting
+  Owner/Tasks/Open) follows `mockup.html`'s Previous Meetings screen; matching `table`/`th`/`td`
+  styles added to `frontend/src/styles/global.css`. Fixed a bug found along the way:
+  `MeetingSummaryResponse.task_count` in `backend/app/api/meetings.py`'s `_to_summary` was
+  hardcoded to `0` (affects `GET /api/meetings`, which this page and Calendar both consume) — now
+  computed from `TaskRepository.list_by_meeting`, satisfying AC1/AC3's "current task count"
+  requirement. Tests: `backend/tests/contract/test_meetings_list.py` (task-count case),
+  `frontend/tests/integration/previousMeetings.test.tsx`.
 - [ ] T036 Add `POST /api/users`, `PATCH /api/users/{user_id}/role`, `PATCH
   /api/users/{user_id}/password`, `PATCH /api/users/{user_id}/active` to
   `backend/app/api/users.py` + `user_service.py`, per [users-api.md](./contracts/users-api.md),

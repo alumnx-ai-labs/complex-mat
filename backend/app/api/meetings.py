@@ -22,6 +22,7 @@ router = APIRouter(prefix="/api/meetings", tags=["meetings"])
 
 def _to_summary(db: Session, meeting: Meeting) -> MeetingSummaryResponse:
     owner = UserRepository(db).get_by_id(meeting.owner_id)
+    task_count = len(TaskRepository(db).list_by_meeting(meeting.id))
     return MeetingSummaryResponse(
         id=meeting.id,
         title=meeting.title,
@@ -29,7 +30,7 @@ def _to_summary(db: Session, meeting: Meeting) -> MeetingSummaryResponse:
         time=meeting.time,
         owner_id=meeting.owner_id,
         owner_name=owner.employee_name if owner else "",
-        task_count=0,
+        task_count=task_count,
     )
 
 

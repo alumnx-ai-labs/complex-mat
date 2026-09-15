@@ -383,6 +383,27 @@ textarea {
   font-size: 14.5px;
 }
 
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+}
+
+td {
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
