@@ -53,10 +53,11 @@ def make_user(db_session: Session):
         role: Role = Role.TEAM_MEMBER,
         is_active: bool = True,
         password: str = "Password123!",
+        employee_name: str | None = None,
     ) -> tuple[User, str]:
         counter["n"] += 1
         user = User(
-            employee_name=f"Test User {counter['n']}",
+            employee_name=employee_name or f"Test User {counter['n']}",
             employee_mail_id=f"user{counter['n']}@example.com",
             employee_id=f"E{1000 + counter['n']}",
             password_hash=hash_password(password),

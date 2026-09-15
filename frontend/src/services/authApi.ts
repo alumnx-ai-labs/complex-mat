@@ -9,6 +9,7 @@ export interface AuthUser {
   employeeId: string;
   role: Role;
   isActive: boolean;
+  termsAccepted: boolean;
 }
 
 export interface LoginResponse {
@@ -16,10 +17,14 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
-export function login(employeeMailId: string, password: string): Promise<LoginResponse> {
+export function login(
+  employeeMailId: string,
+  password: string,
+  termsAccepted: boolean,
+): Promise<LoginResponse> {
   return apiRequest<LoginResponse>("/api/auth/login", {
     method: "POST",
-    body: { employeeMailId, password },
+    body: { employeeMailId, password, termsAccepted },
   });
 }
 

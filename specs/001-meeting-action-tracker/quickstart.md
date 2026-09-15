@@ -5,17 +5,22 @@ This guide describes how to run MAT end-to-end and manually validate that each u
 model/service/controller code — see [data-model.md](./data-model.md) and [contracts/](./contracts)
 for those details, and `tasks.md` (from `/speckit-tasks`) for the implementation breakdown.
 
-## Prerequisites
+## Prerequisites *(2026-09-15 revert for authentication and storage — see
+[research.md](./research.md) items 1, 3, 10)*
 
 - Python 3.11+ and `pip` (backend); Node.js 18+ and `npm` (frontend).
-- No external services strictly required to run MAT itself — the backend uses a local SQLite file,
-  created automatically on first run. Email notifications and Azure DevOps suggestions degrade
-  gracefully (logged/empty-result, respectively) without a configured SMTP server or Azure DevOps
-  connection, per FR-033/FR-038 — configure both for full end-to-end validation of scenarios 5 and
-  6 below.
-- A seed step creates the first Admin account and designates it as the workspace's configured
-  default Admin (see [data-model.md](./data-model.md) `WorkspaceSettings`), since there is no
-  self-registration.
+- No external database server to install — MAT uses a local, file-based SQLite database
+  (`backend/mat.db`), created automatically on first run.
+- A JWT signing secret (`JWT_SECRET`, backend `.env`) — sign-in is Employee Mail ID/Password only,
+  verified by the backend itself; there is no external identity provider to configure.
+- Email notifications and Azure DevOps suggestions degrade gracefully (logged/empty-result,
+  respectively) without a configured SMTP server or Azure DevOps connection, per FR-033/FR-038 —
+  configure both for full end-to-end validation of scenarios 5 and 6 below.
+- There is a one-time seed step for the very first account: since only an existing Admin can create
+  a member account (People "Add Member"), a seed script creates the first Admin — and configures
+  them as the workspace's default Admin — when the `users` table is empty (see
+  [research.md](./research.md) item 10). Every account after that is created from the People
+  screen; there is no self-registration or auto-provisioning path.
 
 ## Setup
 
@@ -24,29 +29,45 @@ for those details, and `tasks.md` (from `/speckit-tasks`) for the implementation
 cd backend
 python -m venv .venv && . .venv/Scripts/activate   # or source .venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
-python -m app.seed   # creates the first Admin (e.g., john@example.com) as the default Admin
+cp .env.example .env   # fill in JWT_SECRET, seed Admin credentials
+python -m app.seed   # one-time: creates the first Admin/default Admin account
 uvicorn app.main:app --reload --port 8000
 
 # Frontend (separate terminal)
 cd frontend
 npm install
+cp .env.example .env   # fill in VITE_API_BASE_URL (no Google/Firebase config needed)
 npm run dev
 ```
 
 Open the frontend's dev URL (e.g., `http://localhost:5173`) in two different browser profiles or
-windows (private/incognito for the second) to simulate two different people/sessions.
+windows (private/incognito for the second) to simulate two different people/sessions — each signs
+in with the Employee Mail ID/Password an Admin gave them.
 
 ## Validation scenarios
 
 ### 1. Sign in and Role-based access (User Story 1)
 
-1. Open Window A. Sign in as the seeded Admin (`john@example.com`) via either sign-in option.
-2. Confirm Calendar, My Tasks, Previous Meetings, People, and Activity Log are all reachable.
-3. In Window B, sign in as a Team Member account (created in scenario 8 below) and confirm People
-   and Activity Log are not reachable, regardless of which sign-in option was used.
+1. Open Window A. On the **Admin** sign-in option, check "I agree to the Terms and Conditions"
+   (Sign In stays disabled until you do — FR-045), then submit the seeded default Admin `John`'s
+   Employee Mail ID/Password.
+2. Confirm Calendar, My Tasks, Previous Meetings, People, and Activity Log are all reachable, and
+   that `John`'s account now records Terms accepted (FR-046).
+3. As `John`, open People and add a member: Employee Name `Sarah`, Employee Mail ID, Employee ID, a
+   Password, Role `Team Member` (FR-004).
+4. In Window B, after checking the Terms checkbox, sign `Sarah` in with those credentials on the
+   **Team Member** sign-in option — confirm People and Activity Log are not reachable to her.
+5. Sign `Sarah` out and sign back in using the same credentials on the **Admin** sign-in option
+   instead — confirm she still gets only Team-Member-level access; the option clicked has no effect
+   on her account's actual stored Role (FR-002).
+6. Try submitting either sign-in option with the Terms checkbox unchecked — confirm Sign In stays
+   disabled and no sign-in attempt is possible.
 
-**Expected outcome**: Access matches the account's actual Role, not the sign-in option clicked
-(SC-001, FR-002).
+**Expected outcome**: Every account exists only via an Admin's "Add Member" action; both sign-in
+options check the same stored credentials and the account's actual stored Role always governs,
+regardless of which option is clicked; sign-in remains disabled until "I agree to the Terms and
+Conditions" is checked, and a successful sign-in then records that acceptance on the account
+(SC-001, FR-002, FR-004, FR-045, FR-046).
 
 ### 2. Admin creates a meeting and becomes its Owner (User Story 2)
 
@@ -143,20 +164,23 @@ flags rather than reassigns.
 
 **Expected outcome**: Previous Meetings is Role-scoped and its task counts stay accurate.
 
-### 9. Admin manages People (User Story 9)
+### 9. Admin manages member Roles and access (User Story 9)
 
-1. As an Admin, open People and add a new member (`Priya`, Team Member Role).
-2. Sign in as `Priya` with the given credentials — confirm she has Team-Member-level access
-   (FR-004).
-3. As the Admin, change `Priya`'s Role to Admin — confirm she has Admin-level access on her next
-   sign-in (FR-005).
-4. Reset `Priya`'s password and confirm she must use the new password to sign in.
-5. Deactivate `Priya` and confirm she can no longer sign in and no longer appears in attendee/
-   assignee search (FR-006).
+1. As the Admin, open People and add `Priya` (Employee Name, Employee Mail ID, Employee ID,
+   Password, Role `Team Member`) — confirm she can sign in with those credentials (FR-004).
+2. As the Admin, find `Priya` in the People list and change her Role to Admin — confirm she has
+   Admin-level access on her next sign-in (FR-005).
+3. Reset `Priya`'s Password from People — confirm she can no longer sign in with her old Password
+   and can sign in with the new one (FR-005).
+4. Deactivate `Priya` and confirm she can no longer sign in — even with a correct Employee Mail
+   ID/Password — and no longer appears in attendee/assignee search (FR-006).
+5. Reactivate `Priya` and confirm she can sign in again with her Employee Mail ID/Password and
+   regain her prior Role's access.
 6. Make `Priya` (while still active) the Owner of a meeting, then deactivate her — confirm that
    meeting's ownership transfers automatically to the configured default Admin (FR-040, SC-010).
 
-**Expected outcome**: Only Admins reach People; role/password/active changes take effect
+**Expected outcome**: Every account arrives only via an Admin's "Add Member" action, never
+self-registration; only Admins reach People; role/password-reset/active changes take effect
 immediately; Owner deactivation transfers ownership automatically.
 
 ### 10. Admin reviews the Activity Log (User Story 10)

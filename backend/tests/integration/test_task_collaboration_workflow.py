@@ -37,8 +37,7 @@ def test_comment_with_mention_and_ado_reference_are_disambiguated(
     _use_ado_client({1234: AdoWorkItem(id=1234, title="Implement onboarding API", type="Story")})
 
     owner, _ = make_user(role=Role.ADMIN)
-    sarah, _ = make_user(role=Role.TEAM_MEMBER)
-    sarah.employee_name = "Sarah Iyer"
+    sarah, _ = make_user(role=Role.TEAM_MEMBER, employee_name="Sarah Iyer")
     meeting = make_meeting(owner, [sarah])
     task = make_task(meeting, sarah)
 

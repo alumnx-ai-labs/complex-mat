@@ -115,10 +115,9 @@ def test_comment_on_unknown_task_returns_404(client, make_user, auth_header):
 
 def test_letter_mention_resolves_to_attendee(client, make_user, make_meeting, make_task, auth_header):
     owner, _ = make_user(role=Role.ADMIN)
-    sarah, _ = make_user(role=Role.TEAM_MEMBER)
+    sarah, _ = make_user(role=Role.TEAM_MEMBER, employee_name="Sarah Iyer")
     meeting = make_meeting(owner, [sarah])
     task = make_task(meeting, sarah)
-    sarah.employee_name = "Sarah Iyer"
 
     response = client.post(
         f"/api/tasks/{task.id}/comments",

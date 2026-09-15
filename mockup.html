@@ -27,6 +27,7 @@
   .login-card p{color:var(--muted);font-size:13px;margin:0 0 24px;}
   .login-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;}
   .login-btn:hover{background:var(--primary-dark);}
+  .login-btn:disabled{background:var(--gray-tint);color:var(--muted);cursor:not-allowed;}
   .login-logo{width:48px;height:48px;border-radius:10px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;margin:0 auto;}
   .login-note{margin-top:20px;font-size:11px;color:var(--muted);}
 
@@ -189,7 +190,11 @@
       <input class="text-input" id="login-password" type="password" placeholder="Password" value="Passw0rd!" />
     </div>
     <div id="login-error" style="display:none;color:var(--danger);font-size:12px;margin-bottom:12px;">Incorrect Employee Mail ID or Password.</div>
-    <button class="login-btn" onclick="signIn()">Sign In</button>
+    <div class="field-row" style="text-align:left;display:flex;align-items:flex-start;gap:8px;">
+      <input type="checkbox" id="login-terms" onchange="toggleSignInEnabled()" style="margin-top:3px;" />
+      <label for="login-terms" style="font-size:12px;cursor:pointer;">I agree to the <a href="#" onclick="event.preventDefault();" style="color:var(--primary,#4f46e5);">Terms and Conditions</a></label>
+    </div>
+    <button class="login-btn" id="login-signin-btn" onclick="signIn()" disabled>Sign In</button>
     <div class="login-note">Password for every sample account: Passw0rd! · Your account's actual Role always applies, whichever option is selected above.</div>
     <div class="login-accounts">
       <div class="acct" onclick="fillLogin('john@organisation.example','Admin')"><span>John</span><span><b>Admin</b> · john@organisation.example</span></div>
@@ -594,7 +599,12 @@ function fillLogin(email, role){
   if(role) selectLoginRole(role);
 }
 
+function toggleSignInEnabled(){
+  document.getElementById('login-signin-btn').disabled = !document.getElementById('login-terms').checked;
+}
+
 function signIn(){
+  if(!document.getElementById('login-terms').checked) return;
   const email = document.getElementById('login-email').value.trim().toLowerCase();
   const password = document.getElementById('login-password').value;
   const credMatch = Object.values(USERS).find(u => u.email.toLowerCase() === email && u.password === password);
@@ -619,6 +629,8 @@ function signIn(){
 function signOut(){
   document.getElementById('app-shell').classList.remove('active');
   document.getElementById('screen-login').style.display = 'flex';
+  document.getElementById('login-terms').checked = false;
+  toggleSignInEnabled();
 }
 
 function setCurrentUser(id){
