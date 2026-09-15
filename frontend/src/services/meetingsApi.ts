@@ -36,6 +36,14 @@ export interface MeetingCreateInput {
   attendeeIds: number[];
 }
 
+export interface MeetingUpdateInput {
+  title?: string;
+  date?: string;
+  time?: string;
+  agendaNotes?: string;
+  attendeeIds?: number[];
+}
+
 export function listMeetings(params?: { month?: number; year?: number }): Promise<MeetingSummary[]> {
   const query = new URLSearchParams();
   if (params?.month) query.set("month", String(params.month));
@@ -50,4 +58,15 @@ export function getMeetingDetail(meetingId: number): Promise<MeetingDetail> {
 
 export function createMeeting(input: MeetingCreateInput): Promise<MeetingSummary> {
   return apiRequest<MeetingSummary>("/api/meetings", { method: "POST", body: input });
+}
+
+export function updateMeeting(
+  meetingId: number,
+  input: MeetingUpdateInput,
+): Promise<MeetingDetail> {
+  return apiRequest<MeetingDetail>(`/api/meetings/${meetingId}`, { method: "PATCH", body: input });
+}
+
+export function deleteMeeting(meetingId: number): Promise<void> {
+  return apiRequest<void>(`/api/meetings/${meetingId}`, { method: "DELETE" });
 }

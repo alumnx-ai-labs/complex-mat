@@ -5,6 +5,7 @@ import type {
   MeetingCreateInput,
   MeetingDetail,
   MeetingSummary,
+  MeetingUpdateInput,
 } from "../services/meetingsApi";
 
 export function useMeetings(params?: { month?: number; year?: number }) {
@@ -65,5 +66,20 @@ export function useMeetingDetail(meetingId: number | null) {
     refresh();
   }, [refresh]);
 
-  return { meeting, isLoading, error, refresh };
+  const updateMeeting = useCallback(
+    async (input: MeetingUpdateInput) => {
+      if (meetingId === null) throw new Error("No meeting selected.");
+      const updated = await meetingsApi.updateMeeting(meetingId, input);
+      setMeeting(updated);
+      return updated;
+    },
+    [meetingId],
+  );
+
+  const deleteMeeting = useCallback(async () => {
+    if (meetingId === null) throw new Error("No meeting selected.");
+    await meetingsApi.deleteMeeting(meetingId);
+  }, [meetingId]);
+
+  return { meeting, isLoading, error, refresh, updateMeeting, deleteMeeting };
 }

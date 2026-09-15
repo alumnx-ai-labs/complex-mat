@@ -4,9 +4,12 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ForbiddenError, NotFoundError, ValidationFailedError
+from app.models.comment import MentionSourceType
 from app.models.meeting import Meeting
 from app.models.task import Task, TaskStatus
 from app.models.user import Role, User
+from app.repositories.ado_reference_repository import AdoReferenceRepository
+from app.repositories.comment_repository import CommentRepository
 from app.repositories.meeting_repository import MeetingRepository
 from app.repositories.task_repository import TaskRepository
 from app.services.reference_service import sync_task_content_references
@@ -114,3 +117,16 @@ def delete_task(db: Session, current_user: User, task_id: int) -> None:
     if current_user.id != meeting.owner_id and current_user.role != Role.ADMIN:
         raise ForbiddenError("Only the Meeting Owner or an Admin may delete a Task.")
     TaskRepository(db).delete(task)
+
+
+def delete_tasks_for_meeting(db: Session, meeting_id: int) -> None:
+    comment_repo = CommentRepository(db)
+    ado_repo = AdoReferenceRepository(db)
+    task_repo = TaskRepository(db)
+    for task in task_repo.list_by_meeting(meeting_id):
+        comment_repo.replace_mentions(MentionSourceType.TASK, task.id, [])
+        for comment in comment_repo.list_by_task(task.id):
+            comment_repo.replace_mentions(MentionSourceType.COMMENT, comment.id, [])
+            comment_repo.delete(comment)
+        ado_repo.delete_by_task(task.id)
+        task_repo.delete(task)

@@ -25,6 +25,11 @@ class AdoReferenceRepository:
         )
         return list(self.db.scalars(stmt).all())
 
+    def delete_by_task(self, task_id: int) -> None:
+        for row in self.list_by_task(task_id):
+            self.db.delete(row)
+        self.db.flush()
+
     def upsert(
         self,
         task_id: int,

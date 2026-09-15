@@ -13,6 +13,7 @@ from app.schemas.meeting import (
     MeetingCreateRequest,
     MeetingDetailResponse,
     MeetingSummaryResponse,
+    MeetingUpdateRequest,
 )
 from app.services import meeting_service
 
@@ -95,3 +96,24 @@ def get_meeting_detail(
 ) -> MeetingDetailResponse:
     meeting = meeting_service.get_meeting_detail(db, current_user, meeting_id)
     return _to_detail(db, meeting)
+
+
+@router.patch("/{meeting_id}", response_model=MeetingDetailResponse)
+def update_meeting(
+    meeting_id: int,
+    payload: MeetingUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN)),
+) -> MeetingDetailResponse:
+    fields = payload.model_dump(exclude_unset=True)
+    meeting = meeting_service.update_meeting(db, current_user, meeting_id, fields)
+    return _to_detail(db, meeting)
+
+
+@router.delete("/{meeting_id}", status_code=204)
+def delete_meeting(
+    meeting_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN)),
+) -> None:
+    meeting_service.delete_meeting(db, current_user, meeting_id)

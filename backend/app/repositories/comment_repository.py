@@ -19,6 +19,10 @@ class CommentRepository:
         stmt = select(Comment).where(Comment.task_id == task_id).order_by(Comment.created_at)
         return list(self.db.scalars(stmt).all())
 
+    def delete(self, comment: Comment) -> None:
+        self.db.delete(comment)
+        self.db.flush()
+
     def add_mentions(
         self, source_type: MentionSourceType, source_id: int, user_ids: list[int]
     ) -> list[CommentMention]:

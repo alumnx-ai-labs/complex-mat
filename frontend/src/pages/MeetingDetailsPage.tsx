@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { TaskBoard } from "../components/tasks/TaskBoard";
 import { TaskEditModal } from "../components/tasks/TaskEditModal";
@@ -10,17 +10,36 @@ import type { Task } from "../services/tasksApi";
 
 export function MeetingDetailsPage() {
   const { meetingId } = useParams<{ meetingId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { meeting, isLoading, error, refresh } = useMeetingDetail(
+  const { meeting, isLoading, error, refresh, deleteMeeting } = useMeetingDetail(
     meetingId ? Number(meetingId) : null,
   );
   const { createTask, updateTask, deleteTask } = useTasks(Number(meetingId), refresh);
   const [editingTask, setEditingTask] = useState<Task | null | undefined>(undefined);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   if (isLoading) return <p className="muted">Loading meeting…</p>;
   if (error || !meeting || !user) return <p className="muted">{error ?? "Meeting not found."}</p>;
 
   const isOwner = user.id === meeting.ownerId;
+  const isAdmin = user.role === "ADMIN";
+
+  async function handleDeleteMeeting() {
+    if (!window.confirm("Delete this meeting and all of its tasks? This cannot be undone.")) {
+      return;
+    }
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteMeeting();
+      navigate("/calendar", { replace: true });
+    } catch {
+      setDeleteError("Unable to delete this meeting.");
+      setIsDeleting(false);
+    }
+  }
 
   return (
     <div>
@@ -32,8 +51,33 @@ export function MeetingDetailsPage() {
               {meeting.date} · {meeting.time}
             </div>
           </div>
-          <span className="pill pill-owner">Meeting Owner: {meeting.ownerName}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span className="pill pill-owner">Meeting Owner: {meeting.ownerName}</span>
+            {isAdmin && (
+              <>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => navigate(`/meetings/${meeting.id}/edit`)}
+                >
+                  Edit Meeting
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  style={{ color: "var(--danger)" }}
+                  onClick={handleDeleteMeeting}
+                  disabled={isDeleting}
+                >
+                  Delete Meeting
+                </button>
+              </>
+            )}
+          </div>
         </div>
+        {deleteError && (
+          <p role="alert" className="login-error">
+            {deleteError}
+          </p>
+        )}
 
         <div className="field-row" style={{ marginTop: "16px" }}>
           <span className="field-label">Attendees</span>

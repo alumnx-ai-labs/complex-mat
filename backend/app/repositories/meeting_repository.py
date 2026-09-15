@@ -65,3 +65,7 @@ class MeetingRepository:
 
     def is_attendee(self, meeting: Meeting, user_id: int) -> bool:
         return any(attendee.user_id == user_id for attendee in meeting.attendees)
+
+    def delete(self, meeting: Meeting) -> None:
+        self.db.delete(meeting)
+        self.db.flush()

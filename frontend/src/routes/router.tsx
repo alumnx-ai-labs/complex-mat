@@ -6,6 +6,7 @@ import { PlaceholderPage } from "../components/layout/PlaceholderPage";
 import { ResponsiveShell } from "../components/layout/ResponsiveShell";
 import { CalendarPage } from "../pages/CalendarPage";
 import { CreateMeetingPage } from "../pages/CreateMeetingPage";
+import { EditMeetingPage } from "../pages/EditMeetingPage";
 import { LoginPage } from "../pages/LoginPage";
 import { MeetingDetailsPage } from "../pages/MeetingDetailsPage";
 import { MyTasksPage } from "../pages/MyTasksPage";
@@ -70,6 +71,16 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth title="Meeting Details">
         <MeetingDetailsPage />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/meetings/:meetingId/edit",
+    element: (
+      <RequireAuth title="Edit Meeting">
+        <RequireAdmin>
+          <EditMeetingPage />
+        </RequireAdmin>
       </RequireAuth>
     ),
   },

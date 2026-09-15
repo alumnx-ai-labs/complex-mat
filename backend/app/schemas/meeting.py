@@ -1,3 +1,4 @@
+import datetime
 from datetime import date, time
 
 from app.schemas.camel import CamelModel
@@ -10,6 +11,14 @@ class MeetingCreateRequest(CamelModel):
     time: time
     agenda_notes: str | None = None
     attendee_ids: list[int]
+
+
+class MeetingUpdateRequest(CamelModel):
+    title: str | None = None
+    date: datetime.date | None = None
+    time: datetime.time | None = None
+    agenda_notes: str | None = None
+    attendee_ids: list[int] | None = None
 
 
 class AttendeeResponse(CamelModel):

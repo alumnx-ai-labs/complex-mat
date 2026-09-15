@@ -269,12 +269,21 @@ CRITICAL (constitution) violations were found. See the in-session Convergence Fi
   mention-made (FR-036) notifications are still NOT implemented — T028/T029's Comment/mention
   feature now exists in the codebase (merged from upstream), but its comment-posted and
   mention-made events are not yet wired to `notification_service`.)
-- [ ] T033 Add `PATCH /api/meetings/{meeting_id}` and `DELETE /api/meetings/{meeting_id}` to
+- [X] T033 Add `PATCH /api/meetings/{meeting_id}` and `DELETE /api/meetings/{meeting_id}` to
   `backend/app/api/meetings.py` + `meeting_service.py`, Admin-only (not Owner-restricted), with
-  cascading Task deletion, per FR-012, FR-013 (missing)
-- [ ] T034 Add `frontend/src/pages/EditMeetingPage.tsx` (new route) and a delete-meeting control
-  on `MeetingDetailsPage.tsx`, both visible to any Admin, per US7 Acceptance Scenarios 1–4
-  (missing)
+  cascading Task deletion, per FR-012, FR-013. `PATCH` never accepts `ownerId` (AC4); removing an
+  Attendee who is a Task's Assignee flags `needsReassignment` instead of reassigning (AC2). `DELETE`
+  cascades through each Task's Comments/CommentMentions/TaskAdoReferences before deleting the Task
+  (`task_service.delete_tasks_for_meeting`, new repository `delete`/`delete_by_task` helpers on
+  `CommentRepository`/`AdoReferenceRepository`/`MeetingRepository`), then the Meeting, recorded as
+  one `MEETING_DELETED` Activity Log entry (AC3). Tests:
+  `backend/tests/contract/test_meetings_update.py`, `backend/tests/contract/test_meetings_delete.py`.
+- [X] T034 Add `frontend/src/pages/EditMeetingPage.tsx` (new route
+  `/meetings/:meetingId/edit`, `RequireAdmin`) and Edit/Delete Meeting controls on
+  `MeetingDetailsPage.tsx`, both visible to any Admin (not Owner-restricted), per US7 Acceptance
+  Scenarios 1–4. Reuses the existing `MeetingForm` (with `dateEditable`) from Create Meeting; Delete
+  prompts a native confirm before calling `DELETE` and navigating back to Calendar. Test:
+  `frontend/tests/integration/editDeleteMeeting.test.tsx`.
 - [ ] T035 Implement `frontend/src/pages/PreviousMeetingsPage.tsx` (replacing its
   `PlaceholderPage`), listing meetings via the existing `GET /api/meetings` with title/date/task
   count and a link into Meeting Details, per FR-039 (missing)
