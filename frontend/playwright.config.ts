@@ -24,8 +24,11 @@ export default defineConfig({
   reporter: process.env.CI
     ? [["junit", { outputFile: "playwright-report/results.xml" }], ["html", { open: "never" }]]
     : "html",
+  // Remote hosts (e.g. Render free tier) can cold-start in tens of seconds on
+  // the first request after being idle — give the whole test room for that,
+  // not just individual assertions.
+  timeout: REMOTE_BASE_URL ? 90_000 : 30_000,
   expect: {
-    // Remote hosts (e.g. Render free tier) can cold-start in tens of seconds.
     timeout: REMOTE_BASE_URL ? 20_000 : 5_000,
   },
   use: {
@@ -33,7 +36,9 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     launchOptions: {
-      slowMo: 500, // Delays each action by 500ms
+      // Delays each action by this many ms — bump via PW_SLOWMO for a slower,
+      // easier-to-watch run (e.g. `PW_SLOWMO=1200 npm run test:e2e:watch`).
+      slowMo: Number(process.env.PW_SLOWMO ?? 500),
     },
     ...(VERCEL_BYPASS_TOKEN
       ? {

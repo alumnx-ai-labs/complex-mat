@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:watch": "PW_SLOWMO=1200 playwright test --headed --workers=1"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
