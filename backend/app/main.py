@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.activity_log import router as activity_log_router
 from app.api.auth import router as auth_router
 from app.api.azure_devops import router as azure_devops_router
 from app.api.comments import router as comments_router
@@ -36,3 +37,4 @@ app.include_router(tasks_router)
 app.include_router(users_router)
 app.include_router(comments_router)
 app.include_router(azure_devops_router)
+app.include_router(activity_log_router)

@@ -12,6 +12,7 @@ from app.repositories.ado_reference_repository import AdoReferenceRepository
 from app.repositories.comment_repository import CommentRepository
 from app.repositories.meeting_repository import MeetingRepository
 from app.repositories.task_repository import TaskRepository
+from app.services.activity_log_service import log_activity
 from app.services.reference_service import sync_task_content_references
 
 
@@ -54,7 +55,10 @@ def create_task(
         description_notes=description_notes,
         due_date=due_date,
     )
-    sync_task_content_references(db, task.id, meeting.id, task.title, task.description_notes)
+    sync_task_content_references(
+        db, task.id, meeting.id, task.title, task.description_notes, actor_id=owner.id
+    )
+    log_activity(db, owner.id, "TASK_CREATED", "Task", task.id)
     return task
 
 
@@ -68,7 +72,9 @@ def update_task_status(
     task = _get_task_or_404(db, task_id)
     if task.assignee_id != current_user.id:
         raise ForbiddenError("Only this task's Assignee may change its status.")
-    return TaskRepository(db).update_status(task, status)
+    task = TaskRepository(db).update_status(task, status)
+    log_activity(db, current_user.id, "TASK_STATUS_CHANGED", "Task", task.id)
+    return task
 
 
 def update_task_description(
@@ -106,8 +112,11 @@ def update_task(db: Session, current_user: User, task_id: int, fields: dict[str,
     task = TaskRepository(db).update(task, **fields)
     if "title" in fields or "description_notes" in fields:
         sync_task_content_references(
-            db, task.id, task.meeting_id, task.title, task.description_notes
+            db, task.id, task.meeting_id, task.title, task.description_notes,
+            actor_id=current_user.id,
         )
+    if "assignee_id" in fields:
+        log_activity(db, current_user.id, "TASK_REASSIGNED", "Task", task.id)
     return task
 
 
@@ -117,6 +126,7 @@ def delete_task(db: Session, current_user: User, task_id: int) -> None:
     if current_user.id != meeting.owner_id and current_user.role != Role.ADMIN:
         raise ForbiddenError("Only the Meeting Owner or an Admin may delete a Task.")
     TaskRepository(db).delete(task)
+    log_activity(db, current_user.id, "TASK_DELETED", "Task", task_id)
 
 
 def delete_tasks_for_meeting(db: Session, meeting_id: int) -> None:
